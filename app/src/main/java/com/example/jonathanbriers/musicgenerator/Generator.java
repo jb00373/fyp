@@ -3,6 +3,9 @@ package com.example.jonathanbriers.musicgenerator;
 import android.util.Log;
 
 import java.util.Random;
+//import java.awt.*;
+//import java.awt.event.*;
+//import java.io.*;
 
 /**
  * Created by Jonny on 30/10/2015.
@@ -24,7 +27,7 @@ public class Generator {
     int drumSpeed;
     int[] drumSpeeds = new int[] {1, 2, 4};
     boolean progHasHats;
-    int notesInChord;
+    int notesInChord = 3;
     int beatsBetweenChords = 8;
     int[] beatsInProg;
     int[][][] song;
@@ -35,9 +38,12 @@ public class Generator {
     long seed;
     boolean hasDrums;
     boolean progHasDrums;
+    MIDIMaker midi;
 
-    void init() {
+    public Generator(MIDIMaker m) {
+
         rand = new Random(seed);
+        midi = m;
     }
 
     void chooseKey() {
@@ -56,7 +62,6 @@ public class Generator {
         }
         //else hasdrums = false by default
     }
-
 
 
     void addNotes() {
@@ -103,10 +108,10 @@ public class Generator {
         createScale();
         createChords();
         generateChordProgession(numberOfProgressions, numberOfChords);
-        generateMelody();
-        if (hasDrums) {
-            addDrums();
-        }
+//        generateMelody();
+//        if (hasDrums) {
+//            addDrums();
+//        }
     }
 
     void createChords() {
@@ -158,18 +163,23 @@ public class Generator {
         randomChordProgression = new Chord[numberOfProgressions][numberOfChords];
         int b = 0;
         for (int i = 0; i < numberOfProgressions; i++) {
-            chooseNumChordNotes();
+            //chooseNumChordNotes();
             for (int j = 0; j < numberOfChords; j++) {
                 randomChordProgression[i][j] = chords[rand.nextInt(6)];
                 for (int k = 0; k < notesInChord; k++) {
                     song[i][k][b] = randomChordProgression[i][j].getNotes()[k];
+                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
                 }
                 b += beatsBetweenChords;
+                for (int k = 0; k < notesInChord; k++) {
+                    midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
+                }
                 //Debug.Log (randomChordProgression[i,j].getName());
             }
             beatsInProg[i] = numberOfChords * beatsBetweenChords;
             b = 0;
         }
+        midi.gen();
     }
 
 

@@ -2,12 +2,12 @@ package com.example.jonathanbriers.musicgenerator;
 
 import android.content.Context;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,6 +15,13 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.concurrent.Executors;
@@ -82,6 +89,12 @@ public class MainActivity extends AppCompatActivity {
     Button btnPlay;
     Button btnPause;
     Button btnSeed;
+    Integer randomSeed;
+    String filename;
+    DataOutputStream data;
+    FileInputStream fi;
+    MediaPlayer mediaPlayer;
+    FileDescriptor fd;
 
     ScheduledExecutorService executor;
     ScheduledFuture<?> t;
@@ -97,17 +110,56 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        generator = new Generator();
-        generator.init();
         txtSeed = new EditText(this);
         txtSeed   = (EditText)findViewById(R.id.txtSeed);
-
         Random random = new Random(System.currentTimeMillis());
-        Integer randomSeed = random.nextInt(10000);
+        randomSeed = random.nextInt(10000);
         String rs =  randomSeed.toString();
         txtSeed.setText(rs, TextView.BufferType.EDITABLE);
-        generator.setSeed(randomSeed);
-        generator.newSong();
+
+        //File file = new File(getApplicationContext().getFilesDir(), "music.midi");
+        filename = "/storage/emulated/0/MusicGenerator/music.midi";
+
+        mediaPlayer = new MediaPlayer();
+        newSong();
+
+//        try {
+//            //Delete file if there already is one
+//            File dir = getFilesDir();
+//            File file = new File(filename);
+//            boolean deleted = file.delete();
+//            if (deleted) {
+//                Log.e("Deleted", "yes");
+//            }
+//            else {
+//                Log.e("Deleted", "nah");
+//            }
+//            FileOutputStream fo = new FileOutputStream(filename);
+//            //fo = openFileOutput(filename, Context.MODE_PRIVATE);
+//            data = new DataOutputStream(fo);
+//            MIDIMaker m = new MIDIMaker(data, filename);
+//            generator = new Generator(m);
+//            generator.setSeed(randomSeed);
+//            generator.newSong();
+//            //m.gen();
+//           // fi = openFileInput(filename);
+//            fi = new FileInputStream(filename);
+//            try {
+//                fd = fi.getFD();
+//                mediaPlayer.setDataSource(fd);
+//                mediaPlayer.prepare();
+//
+//            }
+//            catch (IOException f) {
+//                f.printStackTrace();
+//            }
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+        //mediaPlayer = MediaPlayer.create(this, R.raw.moonlightmovement1);
+
+        mediaPlayer.setLooping(true);
+
 
         btnGenerate = new Button(this);
         btnGenerate = (Button)findViewById(R.id.btnGenerate);
@@ -122,8 +174,7 @@ public class MainActivity extends AppCompatActivity {
         btnPlay.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                leftVolume = 1;
-                rightVolume = 1;
+                mediaPlayer.start();
                 playPressed = true;
             }
         });
@@ -134,8 +185,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 playPressed = false;
-                leftVolume = 0;
-                rightVolume = 0;
+                mediaPlayer.pause();
             }
         });
 
@@ -145,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Random random = new Random(System.currentTimeMillis());
-                Integer randomSeed = random.nextInt(10000);
+                randomSeed = random.nextInt(10000);
                 String rs = randomSeed.toString();
                 txtSeed.setText(rs, TextView.BufferType.EDITABLE);
                 generator.setSeed(randomSeed);
@@ -157,7 +207,7 @@ public class MainActivity extends AppCompatActivity {
 
         soundPool = new SoundPool(maxSoundsAtOnce, AudioManager.STREAM_MUSIC, 100);
         soundPoolMap = new HashMap<Integer, Integer>();
-        loadSounds();
+        //loadSounds();
 
         AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
         maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
@@ -169,66 +219,103 @@ public class MainActivity extends AppCompatActivity {
 
         //Number of threads
         executor = Executors.newScheduledThreadPool(7);
-
-        //Schedule each channel
-        t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
-        w = executor.scheduleAtFixedRate(chord2, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-        x = executor.scheduleAtFixedRate(chord3, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-        u = executor.scheduleAtFixedRate(drums, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-        v = executor.scheduleAtFixedRate(melody, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//
+//        //Schedule each channel
+//        t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
+//        w = executor.scheduleAtFixedRate(chord2, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//        x = executor.scheduleAtFixedRate(chord3, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//        u = executor.scheduleAtFixedRate(drums, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//        v = executor.scheduleAtFixedRate(melody, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
 
     }
 
     void newSong() {
-        t.cancel(false);
-        u.cancel(false);
-        v.cancel(false);
-        w.cancel(false);
-        x.cancel(false);
-        executor = Executors.newScheduledThreadPool(7);
-        playPressed = false;
-        leftVolume = 0;
-        rightVolume = 0;
-        if (txtSeed.getText().toString() != "") {
-            generator.setSeed((long) txtSeed.getText().toString().hashCode());
-            chordBeat = 0;
-            chord2Beat = 0;
-            chord3Beat = 0;
-            drumBeat = 0;
-            melodyBeat = 0;
-            generator.newSong();
-            song = generator.getSong();
-            t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
-            w = executor.scheduleAtFixedRate(chord2, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
-            x = executor.scheduleAtFixedRate(chord3, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-            u = executor.scheduleAtFixedRate(drums, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-            v = executor.scheduleAtFixedRate(melody, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-
-
-        }
-        else {
-            Random random = new Random(System.currentTimeMillis());
-            Integer randomSeed = random.nextInt(10000);
-            String rs =  randomSeed.toString();
-            txtSeed.setText(rs, TextView.BufferType.EDITABLE);
+        try {
+            //Delete file if there already is one
+            File dir = getFilesDir();
+            File file = new File(filename);
+            boolean deleted = file.delete();
+            if (deleted) {
+                Log.e("Deleted", "yes");
+            }
+            else {
+                Log.e("Deleted", "nah");
+            }
+            FileOutputStream fo = new FileOutputStream(filename);
+            //fo = openFileOutput(filename, Context.MODE_PRIVATE);
+            data = new DataOutputStream(fo);
+            MIDIMaker m = new MIDIMaker(data, filename);
+            generator = new Generator(m);
             generator.setSeed(randomSeed);
-            chordBeat = 0;
-            chord2Beat = 0;
-            chord3Beat = 0;
-            drumBeat = 0;
-            melodyBeat = 0;
             generator.newSong();
-            song = generator.getSong();
-            t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
-            w = executor.scheduleAtFixedRate(chord2, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
-            x = executor.scheduleAtFixedRate(chord3, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-            u = executor.scheduleAtFixedRate(drums, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
-            v = executor.scheduleAtFixedRate(melody, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+            mediaPlayer.reset();
+            //m.gen();
+            // fi = openFileInput(filename);
+            fi = new FileInputStream(filename);
+            try {
+                fd = fi.getFD();
+                mediaPlayer.setDataSource(fd);
+                mediaPlayer.prepare();
 
-
-
+            }
+            catch (IOException f) {
+                f.printStackTrace();
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         }
     }
+
+//    void newSong() {
+//        t.cancel(false);
+//        u.cancel(false);
+//        v.cancel(false);
+//        w.cancel(false);
+//        x.cancel(false);
+//        executor = Executors.newScheduledThreadPool(7);
+//        playPressed = false;
+//        leftVolume = 0;
+//        rightVolume = 0;
+//        if (txtSeed.getText().toString() != "") {
+//            generator.setSeed((long) txtSeed.getText().toString().hashCode());
+//            chordBeat = 0;
+//            chord2Beat = 0;
+//            chord3Beat = 0;
+//            drumBeat = 0;
+//            melodyBeat = 0;
+//            generator.newSong();
+//            song = generator.getSong();
+//            t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
+//            w = executor.scheduleAtFixedRate(chord2, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
+//            x = executor.scheduleAtFixedRate(chord3, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//            u = executor.scheduleAtFixedRate(drums, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//            v = executor.scheduleAtFixedRate(melody, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//
+//
+//        }
+//        else {
+//            Random random = new Random(System.currentTimeMillis());
+//            Integer randomSeed = random.nextInt(10000);
+//            String rs =  randomSeed.toString();
+//            txtSeed.setText(rs, TextView.BufferType.EDITABLE);
+//            generator.setSeed(randomSeed);
+//            chordBeat = 0;
+//            chord2Beat = 0;
+//            chord3Beat = 0;
+//            drumBeat = 0;
+//            melodyBeat = 0;
+//            generator.newSong();
+//            song = generator.getSong();
+//            t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
+//            w = executor.scheduleAtFixedRate(chord2, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
+//            x = executor.scheduleAtFixedRate(chord3, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//            u = executor.scheduleAtFixedRate(drums, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//            v = executor.scheduleAtFixedRate(melody, 0, 250 - (int)generator.getTempo(), TimeUnit.MILLISECONDS);
+//
+//
+//
+//        }
+//    }
 
     Runnable play = new Runnable() {
         public void run() {
