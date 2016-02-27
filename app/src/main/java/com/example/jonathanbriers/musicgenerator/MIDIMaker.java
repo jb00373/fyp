@@ -7,6 +7,7 @@ import android.media.MediaPlayer;
 import android.util.Log;
 
 import java.io.*;
+import java.util.Random;
 
 // Dit programma genereert een MIDI-file met de muziek
 // die in de methode score wordt gespecificeerd.
@@ -131,9 +132,9 @@ public class MIDIMaker
 //        this.add( messageLabel );
 //        genButton.addActionListener(this);
 //        this.addWindowListener(this);
-
+        Random r = new Random();
         track = new ByteArrayOutputStream();
-        tpq = 100; //Tempo
+        tpq =  200; //Tempo
         this.data = data;
         Log.v("generating track, ", "here goes..");
         track.reset();
@@ -157,9 +158,15 @@ public class MIDIMaker
                 data.writeInt(65537);
                 data.writeShort((short) defaultTPQ);
                 data.writeBytes("MTrk");
-                data.writeInt(track.size());
-               // data.writeChars("00");
-                data.writeInt(49155); //c003
+                data.writeInt(track.size() + 4);
+                //data.writeChars("00");
+                int r = new Random().nextInt(96);
+                data.writeShort((short)192); //c0
+                data.writeByte(r);
+                //data.writeByte(0);
+                //data.writeChars("00c0"); //c0
+                //data.writeChars("60"); //60
+                //data.writeChars("00");
                 data.write(track.toByteArray());
                 data.writeInt(16723712);
                 data.close();
