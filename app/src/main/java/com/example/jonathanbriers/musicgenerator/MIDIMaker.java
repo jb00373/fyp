@@ -22,152 +22,60 @@ public class MIDIMaker
 
     private static final long serialVersionUID = 1;
 
-    public void score()
-    {
-        // dit is een voorbeeld-melodie: een toonladder
-        play(c,4);
-        play(e,4);
-        play(g,4);
-        play(b, 4);
-        play(rest, 2);
-        play(c2, 2);
-        stop(c2, 2);
-        play(b1, 2);
-        stop(b1, 2);
-        play(a1, 2);
-        stop(a1, 2);
-        stop(c, 4);
-        stop(e, 4);
-        stop(g, 4);
-        stop(b, 4);
-        stop(c1, 4);
-        play(rest, 3);
-        play(d, 4);
-        play(f, 4);
-        play(a,4);
-        play(c1,4);
-        play(rest, 2);
-        play(e1,2);
-        stop(e1,2);
-        play(d1,2);
-        stop(d1,2);
-        play(c2,2);
-        stop(c2,2);
-        stop(d,4);
-        stop(f,4);
-        stop(a,4);
-        stop(c1,4);
-//        // en een drieklank:
-//        play(c,4);
-//        play(e,4);
-//        play(g,4);
-//        play(c1,8);
-    }
-
-    // er zijn constanten beschikbaar voor enkele veel-gebruikte toonhoogtes
-
-    final int c0=48, d0=50, e0=52, f0=53, g0=55, a0=57, b0=59,
-            c =60, d =62, e =64, f =65, g =67, a =69, b =71,
-            c1=72, d1=74, e1=76, f1=77, g1=79, a1=81, b1=83,
-            c2=84, rest=0;
-
-
-    // met deze methoden kun je een noot een kruis (sharp) of een mol (flat) geven
-    // of een octaaf verhogen of verlagen
-
-    static int sharp(int x)
-    {
-        return x+1;
-    }
-    static int flat(int x)
-    {
-        return x-1;
-    }
-    static int high(int x)
-    {
-        return x+12;
-    }
-    static int low(int x)
-    {
-        return x-12;
-    }
-
-
-    //======================================================================
-    // de rest van het programma dient niet veranderd te worden
-
-
-    String filename;
-    String tpqText;
-
     final byte NoteOn = (byte) 144;
     final byte NoteOff = (byte) 128;
     final byte defaultVolume = (byte) 100;
     final int  defaultTPQ = 480;
 
-    int timeSinceLastNote;
+   // int timeSinceLastNote;
     int tpq;
     DataOutputStream data;
 
-    ByteArrayOutputStream track;
-
-
+    Track track0 = new Track(0);
+    Track track1 = new Track(1);
+    Track track2 = new Track(9);
+    Track tracks[] = new Track[3];
 
     public MIDIMaker(DataOutputStream data, String filename)
     {
-//        this.setSize(200,200);
-//        this.setTitle("Midi file generator");
-//
-//        filenameText = new TextField("music.midi", 20 );
-//        tpqText      = new TextField(defaultTPQ+"", 5 );
-//        genButton    = new Button("Generate");
-//        messageLabel = new Label("enter file name and press button");
-//
-//        this.setLayout(new FlowLayout());
-//        this.add( new Label("Filename:") );
-//        this.add( filenameText );
-//        this.add( new Label("ticks per quart:") );
-//        this.add( tpqText );
-//        this.add( genButton );
-//        this.add( messageLabel );
-//        genButton.addActionListener(this);
-//        this.addWindowListener(this);
         Random r = new Random();
-        track = new ByteArrayOutputStream();
-        tpq =  200; //Tempo
+
+        tracks[0] = track0;
+        tracks[1] = track1;
+        tracks[2] = track2;
         this.data = data;
         Log.v("generating track, ", "here goes..");
-        track.reset();
+        track0.getStream().reset();
+        track1.getStream().reset();
+        track2.getStream().reset();
         //tpq = Integer.parseInt(tpqText.getText());
-        timeSinceLastNote = 0;
+       // timeSinceLastNote = 0;
+    }
+
+    public void setTempo(int tempo) {
+        tpq = tempo;
+    }
+
+    public Track getTrack (int i) {
+        return tracks[i];
     }
 
     public void gen()//actionPerformed()ActionEvent ae)
     {
-//        if (ae.getSource()==genButton)
-//        {
-
-           // score();
-
             try
             {
-//                messageLabel.setText("writing file");
-               // data = new DataOutputStream(new FileOutputStream(filenameText));
                 data.writeBytes("MThd");
                 data.writeInt(6);
                 data.writeInt(65537);
-                data.writeShort((short) defaultTPQ);
+                Log.d("TempoMIDI", "" + tpq);
+                data.writeShort((short) tpq);
                 data.writeBytes("MTrk");
-                data.writeInt(track.size() + 4);
+                data.writeInt(track0.getStream().size() + 4);
                 //data.writeChars("00");
                 int r = new Random().nextInt(96);
-                data.writeShort((short)192); //c0
+                data.writeShort((short) 192); //c0
                 data.writeByte(r);
-                //data.writeByte(0);
-                //data.writeChars("00c0"); //c0
-                //data.writeChars("60"); //60
-                //data.writeChars("00");
-                data.write(track.toByteArray());
+                data.write(track0.getStream().toByteArray());
                 data.writeInt(16723712);
                 data.close();
                 Log.v("SUC", "CES!");
@@ -180,63 +88,150 @@ public class MIDIMaker
 //        }
     }
 
+    public void gen2Tracks()//actionPerformed()ActionEvent ae)
+    {
+        try
+        {
+            data.writeBytes("MThd");
+            data.writeInt(6);
+            //Ends in 8 because 2 tracks not 1
+            data.writeInt(65538);
+            Log.d("TempoMIDI", "" + tpq);
+            data.writeShort((short) tpq);
 
-    void play(int pitch, double duration)
+            int r = new Random().nextInt(96);
+            data.writeBytes("MTrk");
+            //+4 is for 00 FF 2F 00
+            data.writeInt(track0.getStream().size() + 7);
+            data.writeShort((short)192); //c0
+            data.writeByte(r);
+            data.write(track0.getStream().toByteArray());
+            data.writeInt(16723712);
+
+            r = new Random().nextInt(96);
+            data.writeBytes("MTrk");
+            data.writeInt(track1.getStream().size() + 7);
+            data.writeShort((short) 193); //c1
+            data.writeByte(r);
+            data.write(track1.getStream().toByteArray());
+            data.writeInt(16723712);
+            data.close();
+            Log.v("SUC", "CES!");
+        }
+
+        catch (Exception e)
+        {
+            Log.v("Error writing file, ", "Oh no!");
+        }
+//        }
+    }
+
+    public void gen3Tracks()//actionPerformed()ActionEvent ae)
+    {
+        try
+        {
+            data.writeBytes("MThd");
+            data.writeInt(6);
+            //Ends in 8 because 3 tracks not 1
+            data.writeInt(65539);
+            Log.d("TempoMIDI", "" + tpq);
+            data.writeShort((short) tpq);
+
+            int r = new Random().nextInt(96);
+            data.writeBytes("MTrk");
+            //+4 is for 00 FF 2F 00
+            data.writeInt(track0.getStream().size() + 7);
+            data.writeShort((short)192); //c0
+            data.writeByte(r);
+            data.write(track0.getStream().toByteArray());
+            data.writeInt(16723712);
+
+            r = new Random().nextInt(96);
+            data.writeBytes("MTrk");
+            data.writeInt(track1.getStream().size() + 7);
+            data.writeShort((short) 193); //c1
+            data.writeByte(r);
+            data.write(track1.getStream().toByteArray());
+            data.writeInt(16723712);
+
+            r = new Random().nextInt(96);
+            data.writeBytes("MTrk");
+            data.writeInt(track2.getStream().size() + 7);
+            data.writeShort((short) 201); //c9
+            data.writeByte(r);
+            data.write(track2.getStream().toByteArray());
+            data.writeInt(16723712);
+            data.close();
+            Log.v("SUC", "CES!");
+        }
+
+        catch (Exception e)
+        {
+            Log.v("Error writing file, ", "Oh no!");
+        }
+//        }
+    }
+
+    void play(int pitch, double duration, Track track)
     {
         int durat;
         durat = (int)(duration*tpq/4);
 
-        if (pitch==0)
-            timeSinceLastNote += durat;
+        if (pitch==0) {
+            track.setTimeSinceLastNote(track.getTimeSinceLastNote() + durat);
+        }
+//        if (track.getNumber() == 1) {
+//            Log.d("Track", "1");
+//        }
         else
         {
-            sendLength(timeSinceLastNote);
-            sendByte( NoteOn );
-            sendByte( (byte) pitch );
-            sendByte( defaultVolume );
+            sendLength(track.getTimeSinceLastNote(), track);
+            sendByte((byte)(NoteOn + track.getNumber()), track );
+            sendByte((byte) pitch, track );
+            sendByte(defaultVolume,track );
 
 //            sendLength(durat);
 //            sendByte( NoteOff );
 //            sendByte( (byte) pitch );
 //            sendByte( defaultVolume );
-            timeSinceLastNote = 0;
+            track.setTimeSinceLastNote(0);
         }
     }
 
-    void stop(int pitch, double duration)
+    void stop(int pitch, double duration, Track track)
     {
         int durat;
         durat = (int)(duration*tpq/4);
-        sendLength(durat);
-        sendByte( NoteOff );
-        sendByte( (byte) pitch );
-        sendByte( defaultVolume );
-        timeSinceLastNote = 0;
+        sendLength(durat, track);
+        sendByte( (byte)(NoteOff + track.getNumber()), track );
+        sendByte( (byte) pitch, track );
+        sendByte( defaultVolume, track );
+        track.setTimeSinceLastNote(0);
     }
 
-    void sendLength(int x)
+    void sendLength(int x, Track track)
     {
         if (x>=2097152)
         {
-            sendByte((byte)(128+x/2097152));
+            sendByte((byte)(128+x/2097152), track);
             x %= 2097152;
         }
         if (x>=16384)
         {
-            sendByte((byte)(128+x/16384));
+            sendByte((byte)(128+x/16384), track);
             x %= 16384;
         }
         if (x>=128)
         {
-            sendByte((byte)(128+x/128));
+            sendByte((byte)(128+x/128), track);
             x %= 128;
         }
-        sendByte( (byte)x );
+        sendByte( (byte)x, track );
     }
 
-    void sendByte(byte b)
+    void sendByte(byte b, Track track)
     {
-        track.write(b);
+        track.getStream().write(b);
     }
 
 }

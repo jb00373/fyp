@@ -21,14 +21,14 @@ public class Generator {
     int[] scale;
     int numberOfChords = 4;
     int numberOfProgressions = 8;
-    float tempo;
+    int tempo;
     int melodySpeed;
-    int[] melodySpeeds = new int[] {2, 4, 8};
+    int[] melodySpeeds = new int[] {4, 8, 16};
     int drumSpeed;
-    int[] drumSpeeds = new int[] {1, 2, 4};
+    int[] drumSpeeds = new int[] {4, 8, 16};
     boolean progHasHats;
     int notesInChord = 3;
-    int beatsBetweenChords = 8;
+    int beatsBetweenChords = 16;
     int[] beatsInProg;
     int[][][] song;
     Random rand;
@@ -53,7 +53,10 @@ public class Generator {
     }
 
     void chooseTempo() {
-        tempo = rand.nextInt(100);
+        tempo = rand.nextInt(80) + 10;
+        //tempo = 1;
+        Log.d("Tempo: ", "" + tempo);
+        midi.setTempo(tempo);
     }
 
     void chooseHasDrums() {
@@ -91,9 +94,10 @@ public class Generator {
        // generateChordProgession(numberOfProgressions, numberOfChords);
         generateMusic(numberOfProgressions, numberOfChords);
 //        generateMelody();
-//        if (hasDrums) {
-//            addDrums();
-//        }
+        if (hasDrums) {
+            addDrums();
+        }
+        midi.gen3Tracks();
     }
 
     void createChords() {
@@ -140,29 +144,29 @@ public class Generator {
         notesInChord = rand.nextInt(2) + 1;
     }
 
-    void generateChordProgession(int numberOfProgressions, int numberOfChords) {
-        beatsInProg = new int[numberOfProgressions];
-        randomChordProgression = new Chord[numberOfProgressions][numberOfChords];
-        int b = 0;
-        for (int i = 0; i < numberOfProgressions; i++) {
-            //chooseNumChordNotes();
-            for (int j = 0; j < numberOfChords; j++) {
-                randomChordProgression[i][j] = chords[rand.nextInt(6)];
-                for (int k = 0; k < notesInChord; k++) {
-                    song[i][k][b] = randomChordProgression[i][j].getNotes()[k];
-                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
-                }
-                b += beatsBetweenChords;
-                for (int k = 0; k < notesInChord; k++) {
-                    midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
-                }
-                //Debug.Log (randomChordProgression[i,j].getName());
-            }
-            beatsInProg[i] = numberOfChords * beatsBetweenChords;
-            b = 0;
-        }
-        midi.gen();
-    }
+//    void generateChordProgession(int numberOfProgressions, int numberOfChords) {
+//        beatsInProg = new int[numberOfProgressions];
+//        randomChordProgression = new Chord[numberOfProgressions][numberOfChords];
+//        int b = 0;
+//        for (int i = 0; i < numberOfProgressions; i++) {
+//            //chooseNumChordNotes();
+//            for (int j = 0; j < numberOfChords; j++) {
+//                randomChordProgression[i][j] = chords[rand.nextInt(6)];
+//                for (int k = 0; k < notesInChord; k++) {
+//                    song[i][k][b] = randomChordProgression[i][j].getNotes()[k];
+//                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
+//                }
+//                b += beatsBetweenChords;
+//                for (int k = 0; k < notesInChord; k++) {
+//                    midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
+//                }
+//                //Debug.Log (randomChordProgression[i,j].getName());
+//            }
+//            beatsInProg[i] = numberOfChords * beatsBetweenChords;
+//            b = 0;
+//        }
+//        midi.gen();
+//    }
 
     void generateMusic(int numberOfProgressions, int numberOfChords) {
         beatsInProg = new int[numberOfProgressions];
@@ -178,42 +182,46 @@ public class Generator {
                 b = j * beatsBetweenChords;
                 for (int k = 0; k < notesInChord; k++) {
                     song[i][k][b] = randomChordProgression[i][j].getNotes()[k];
-                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
+                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, 0, midi.getTrack(0));
                 }
-                for (b = b; b < (beatsInProg[i]/numberOfChords) * (j + 1); b++) {
+                //Stop chord
+                for (int k = 0; k < notesInChord; k++) {
+                    if (k == 0) {
+                        midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords, midi.getTrack(0));
+                    }
+                    else {
+                        midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, 0, midi.getTrack(0));
+                    }
+                }
+                for (b = j * beatsBetweenChords; b < (beatsInProg[i]/numberOfChords) * (j + 1); b += melodySpeed) {
+                    Log.d("b = ", "" +b);
+                    Log.d("less than ", "" + beatsInProg[i]/numberOfChords * (j+1));
                     r = rand.nextInt(7);
                     if (rand.nextInt (3) == 1) {
                         song[i][5][b] = scale[r];
-                        midi.play(song[i] [5] [b] + 48, melodySpeed);
+                        midi.play(song[i] [5] [b] + 72, 0, midi.getTrack(1));
                     }
                     else {
-                        r = rand.nextInt(4);
+                        r = rand.nextInt(3);
                         if (r < 3) {
                             song[i] [5] [b] = randomChordProgression[i] [j].getNotes()[r];
-                            midi.play(song[i] [5] [b] + 48, melodySpeed);
+                            midi.play(song[i] [5] [b] + 72, 0, midi.getTrack(1));
                         }
                         //Rest
                         else {
-                            midi.play(0, melodySpeed);
+                            midi.play(0, 0, midi.getTrack(1));
                         }
                     }
-                    midi.stop(song[i] [5] [b] + 72, melodySpeed);
+                    midi.stop(song[i] [5] [b] + 72, melodySpeed, midi.getTrack(1));
                 }
-                //b += melodySpeed;
-
-                for (int k = 0; k < notesInChord; k++) {
-                    midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, 0);
-                }
-//                if (b%melodySpeed == 0) {
-//                    midi.stop(scale[r] + 72, melodySpeed);
-//                }
-                //Debug.Log (randomChordProgression[i,j].getName());
             }
-
             b = 0;
         }
-        midi.gen();
     }
+
+
+
+
 
     void generateMelody() {
         for (int i = 0; i < numberOfProgressions; i++) {
@@ -246,7 +254,12 @@ public class Generator {
     }
 
     void chooseProgHasDrums() {
-        if (rand.nextInt(2) == 1) {
+        int r = rand.nextInt(3);
+        Log.d("r", ""+r);
+        if (r == 1) {
+            progHasDrums = false;
+        }
+        else {
             progHasDrums = true;
         }
     }
@@ -262,21 +275,39 @@ public class Generator {
                     for (int b = j * beatsBetweenChords; b < (beatsInProg[i]/numberOfChords) * (j + 1) ; b += drumSpeed) {
                         //Kick on every chord
                         if (b % beatsBetweenChords == 0) {
-                            song[i][9][b] = 5;
+                            song[i][9][b] = 36;
+                            midi.play(song[i][9][b], 0, midi.getTrack(2));
+//                            midi.stop(song[i][9][b], beatsBetweenChords/2, midi.getTrack(2));
+
                         }
-                        //Clap on every half beat
+//                        Clap on every half beat
                         else if (b % (beatsBetweenChords/2) == 0) {
-                            song[i][9][b] = 2;
+                            song[i][9][b] = 39;
+                            midi.play(song[i][9][b], 0, midi.getTrack(2));
+//                            midi.stop(song[i] [9] [b], beatsBetweenChords/2, midi.getTrack(2));
                         }
                         //Chance of hihat on others
                         else if (progHasHats) {
                             if (rand.nextInt(3) == 0) {
-                                song[i][9][b] = 3;
+                                song[i][9][b] = 42;
+                                midi.play(song[i][9][b], 0, midi.getTrack(2));
+
                             }
                             else if (rand.nextInt(5) == 0) {
-                                song[i][9][b] = 4;
+                                song[i][9][b] = 44;
+                                midi.play(song[i][9][b], 0, midi.getTrack(2));
+
+                            }
+                            else {
+                                song[i][9][b] = 0;
+                                midi.play(song[i][9][b], 0, midi.getTrack(2));
                             }
                         }
+                        else {
+                            song[i][9][b] = 0;
+                            midi.play(song[i][9][b], 0, midi.getTrack(2));
+                        }
+                        midi.stop(song[i] [9] [b], drumSpeed, midi.getTrack(2));
                     }
                 }
             }
@@ -380,3 +411,110 @@ public class Generator {
 //            b = 0;
 //        }
 //    }
+
+//    void generateMusicOld(int numberOfProgressions, int numberOfChords) {
+//        beatsInProg = new int[numberOfProgressions];
+//        randomChordProgression = new Chord[numberOfProgressions][numberOfChords];
+//        int b = 0;
+//        int r = 0;
+//        for (int i = 0; i < numberOfProgressions; i++) {
+//            //chooseNumChordNotes();
+//            chooseMelodySpeed();
+//            beatsInProg[i] = numberOfChords * beatsBetweenChords;
+//            for (int j = 0; j < numberOfChords; j++) {
+//                randomChordProgression[i][j] = chords[rand.nextInt(6)];
+//                b = j * beatsBetweenChords;
+//                for (int k = 0; k < notesInChord; k++) {
+//                    song[i][k][b] = randomChordProgression[i][j].getNotes()[k];
+//                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords);
+//                }
+//                for (b = b; b < (beatsInProg[i]/numberOfChords) * (j + 1); b += melodySpeed) {
+//                    r = rand.nextInt(7);
+//                    if (rand.nextInt (3) == 1) {
+//                        song[i][5][b] = scale[r];
+//                        midi.play(song[i] [5] [b] + 48, melodySpeed);
+//                    }
+//                    else {
+//                        r = rand.nextInt(4);
+//                        if (r < 3) {
+//                            song[i] [5] [b] = randomChordProgression[i] [j].getNotes()[r];
+//                            midi.play(song[i] [5] [b] + 48, melodySpeed);
+//                        }
+//                        //Rest
+//                        else {
+//                            midi.play(0, melodySpeed);
+//                        }
+//                    }
+//                    midi.stop(song[i] [5] [b] + 48, melodySpeed);
+//                }
+//                //b += melodySpeed;
+//                //Stop chord
+//                for (int k = 0; k < notesInChord; k++) {
+//                    midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, 0);
+//                }
+////                if (b%melodySpeed == 0) {
+////                    midi.stop(scale[r] + 72, melodySpeed);
+////                }
+//                //Debug.Log (randomChordProgression[i,j].getName());
+//            }
+//
+//            b = 0;
+//        }
+//        midi.gen();
+//    }
+
+//    void generateMusic3(int numberOfProgressions, int numberOfChords) {
+//        beatsInProg = new int[numberOfProgressions];
+//        randomChordProgression = new Chord[numberOfProgressions][numberOfChords];
+//        int b = 0;
+//        int r = 0;
+//        for (int i = 0; i < numberOfProgressions; i++) {
+//            //chooseNumChordNotes();
+//            chooseMelodySpeed();
+//            beatsInProg[i] = numberOfChords * beatsBetweenChords;
+//            for (int j = 0; j < numberOfChords; j++) {
+//                randomChordProgression[i][j] = chords[rand.nextInt(6)];
+//                b = j * beatsBetweenChords;
+//                for (int k = 0; k < notesInChord; k++) {
+//                    song[i][k][b] = randomChordProgression[i][j].getNotes()[k];
+//                    midi.play(randomChordProgression[i][j].getNotes()[k] + 48, 0, midi.getTrack(0));
+//                }
+//                //Stop chord
+//                for (int k = 0; k < notesInChord; k++) {
+//                    if (k == 0) {
+//                        midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, beatsBetweenChords, midi.getTrack(0));
+//                    }
+//                    else {
+//                        midi.stop(randomChordProgression[i][j].getNotes()[k] + 48, 0, midi.getTrack(0));
+//
+//                    }
+//                }
+//                //Melody
+//                for (b = j * beatsBetweenChords; b < (beatsInProg[i]/numberOfChords) * (j + 1); b += melodySpeed) {
+////                    Log.d("b = ", "" +b);
+////                    Log.d("less than ", "" + beatsInProg[i]/numberOfChords * (j+1));
+//                    r = rand.nextInt(7);
+//                    if (rand.nextInt (3) == 1) {
+//                        song[i][5][b] = scale[r];
+//                        midi.play(song[i] [5] [b] + 72, 0, midi.getTrack(1));
+//                    }
+//                    else {
+//                        r = rand.nextInt(3);
+//                        if (r < 3) {
+//                            song[i] [5] [b] = randomChordProgression[i] [j].getNotes()[r];
+//                            midi.play(song[i] [5] [b] + 72, 0, midi.getTrack(1));
+//                        }
+//                        //Rest
+//                        else {
+//                            midi.play(0, 0, midi.getTrack(1));
+//                        }
+//                    }
+//                    midi.stop(song[i] [5] [b] + 72, melodySpeed, midi.getTrack(1));
+//                }
+//
+//            }
+//            b = 0;
+//        }
+//        midi.gen3Tracks();
+//    }
+//}

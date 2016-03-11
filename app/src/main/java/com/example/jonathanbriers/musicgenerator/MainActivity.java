@@ -109,6 +109,7 @@ public class MainActivity extends AppCompatActivity {
         //Do not move
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
         txtSeed = new EditText(this);
         txtSeed   = (EditText)findViewById(R.id.txtSeed);
@@ -175,6 +176,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 mediaPlayer.start();
+                mediaPlayer.setLooping(true);
                 playPressed = true;
             }
         });
@@ -184,8 +186,10 @@ public class MainActivity extends AppCompatActivity {
         btnPause.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                playPressed = false;
-                mediaPlayer.pause();
+                if (playPressed == true) {
+                    playPressed = false;
+                    mediaPlayer.pause();
+                }
             }
         });
 
@@ -205,8 +209,8 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        soundPool = new SoundPool(maxSoundsAtOnce, AudioManager.STREAM_MUSIC, 100);
-        soundPoolMap = new HashMap<Integer, Integer>();
+//        soundPool = new SoundPool(maxSoundsAtOnce, AudioManager.STREAM_MUSIC, 100);
+//        soundPoolMap = new HashMap<Integer, Integer>();
         //loadSounds();
 
         AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
@@ -218,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
         no_loop = 0;
 
         //Number of threads
-        executor = Executors.newScheduledThreadPool(7);
+//        executor = Executors.newScheduledThreadPool(7);
 //
 //        //Schedule each channel
 //        t = executor.scheduleAtFixedRate(play, 0, 250 - (int) generator.getTempo(), TimeUnit.MILLISECONDS);
@@ -374,43 +378,43 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public void loadSounds() {
-        //Piano octave 1
-        soundPoolMap.put(soundIDC1, soundPool.load(this, R.raw.c1, 1));
-        soundPoolMap.put(soundIDCSharp1, soundPool.load(this, R.raw.c_sharp1, 2));
-        soundPoolMap.put(soundIDD1, soundPool.load(this, R.raw.d1, 3));
-        soundPoolMap.put(soundIDDSharp1, soundPool.load(this, R.raw.d_sharp1, 4));
-        soundPoolMap.put(soundIDE1, soundPool.load(this, R.raw.e1, 5));
-        soundPoolMap.put(soundIDF1, soundPool.load(this, R.raw.f1, 6));
-        soundPoolMap.put(soundIDFSharp1, soundPool.load(this, R.raw.f_sharp1, 7));
-        soundPoolMap.put(soundIDG1, soundPool.load(this, R.raw.g1, 8));
-        soundPoolMap.put(soundIDGSharp1, soundPool.load(this, R.raw.g_sharp1, 9));
-        soundPoolMap.put(soundIDC1, soundPool.load(this, R.raw.a1, 10));
-        soundPoolMap.put(soundIDCSharp1, soundPool.load(this, R.raw.a_sharp1, 11));
-        soundPoolMap.put(soundIDB1, soundPool.load(this, R.raw.b1, 12));
-
-        //Piano octave 2
-        soundPoolMap.put(soundIDC2, soundPool.load(this, R.raw.c2, 13));
-        soundPoolMap.put(soundIDCSharp2, soundPool.load(this, R.raw.c_sharp2, 14));
-        soundPoolMap.put(soundIDD2, soundPool.load(this, R.raw.d2, 15));
-        soundPoolMap.put(soundIDDSharp2, soundPool.load(this, R.raw.d_sharp2, 16));
-        soundPoolMap.put(soundIDE2, soundPool.load(this, R.raw.e2, 17));
-        soundPoolMap.put(soundIDF2, soundPool.load(this, R.raw.f2, 18));
-        soundPoolMap.put(soundIDFSharp2, soundPool.load(this, R.raw.f_sharp2, 19));
-        soundPoolMap.put(soundIDG2, soundPool.load(this, R.raw.g2, 20));
-        soundPoolMap.put(soundIDGSharp2, soundPool.load(this, R.raw.g_sharp2, 21));
-        soundPoolMap.put(soundIDA2, soundPool.load(this, R.raw.a2, 22));
-        soundPoolMap.put(soundIDASharp2, soundPool.load(this, R.raw.a_sharp2, 23));
-        soundPoolMap.put(soundIDB2, soundPool.load(this, R.raw.b2, 24));
-
-        //Hiphopheavy drums
-        soundPoolMap.put(soundIDKick, soundPool.load(this, R.raw.kick, 25));
-        soundPoolMap.put(soundIDSnare, soundPool.load(this, R.raw.snare, 26));
-        soundPoolMap.put(soundIDClap, soundPool.load(this, R.raw.clap, 27));
-        soundPoolMap.put(soundIDHat1, soundPool.load(this, R.raw.hat1, 28));
-        soundPoolMap.put(soundIDHat2, soundPool.load(this, R.raw.hat2, 29));
-
-    }
+//    public void loadSounds() {
+//        //Piano octave 1
+//        soundPoolMap.put(soundIDC1, soundPool.load(this, R.raw.c1, 1));
+//        soundPoolMap.put(soundIDCSharp1, soundPool.load(this, R.raw.c_sharp1, 2));
+//        soundPoolMap.put(soundIDD1, soundPool.load(this, R.raw.d1, 3));
+//        soundPoolMap.put(soundIDDSharp1, soundPool.load(this, R.raw.d_sharp1, 4));
+//        soundPoolMap.put(soundIDE1, soundPool.load(this, R.raw.e1, 5));
+//        soundPoolMap.put(soundIDF1, soundPool.load(this, R.raw.f1, 6));
+//        soundPoolMap.put(soundIDFSharp1, soundPool.load(this, R.raw.f_sharp1, 7));
+//        soundPoolMap.put(soundIDG1, soundPool.load(this, R.raw.g1, 8));
+//        soundPoolMap.put(soundIDGSharp1, soundPool.load(this, R.raw.g_sharp1, 9));
+//        soundPoolMap.put(soundIDC1, soundPool.load(this, R.raw.a1, 10));
+//        soundPoolMap.put(soundIDCSharp1, soundPool.load(this, R.raw.a_sharp1, 11));
+//        soundPoolMap.put(soundIDB1, soundPool.load(this, R.raw.b1, 12));
+//
+//        //Piano octave 2
+//        soundPoolMap.put(soundIDC2, soundPool.load(this, R.raw.c2, 13));
+//        soundPoolMap.put(soundIDCSharp2, soundPool.load(this, R.raw.c_sharp2, 14));
+//        soundPoolMap.put(soundIDD2, soundPool.load(this, R.raw.d2, 15));
+//        soundPoolMap.put(soundIDDSharp2, soundPool.load(this, R.raw.d_sharp2, 16));
+//        soundPoolMap.put(soundIDE2, soundPool.load(this, R.raw.e2, 17));
+//        soundPoolMap.put(soundIDF2, soundPool.load(this, R.raw.f2, 18));
+//        soundPoolMap.put(soundIDFSharp2, soundPool.load(this, R.raw.f_sharp2, 19));
+//        soundPoolMap.put(soundIDG2, soundPool.load(this, R.raw.g2, 20));
+//        soundPoolMap.put(soundIDGSharp2, soundPool.load(this, R.raw.g_sharp2, 21));
+//        soundPoolMap.put(soundIDA2, soundPool.load(this, R.raw.a2, 22));
+//        soundPoolMap.put(soundIDASharp2, soundPool.load(this, R.raw.a_sharp2, 23));
+//        soundPoolMap.put(soundIDB2, soundPool.load(this, R.raw.b2, 24));
+//
+//        //Hiphopheavy drums
+//        soundPoolMap.put(soundIDKick, soundPool.load(this, R.raw.kick, 25));
+//        soundPoolMap.put(soundIDSnare, soundPool.load(this, R.raw.snare, 26));
+//        soundPoolMap.put(soundIDClap, soundPool.load(this, R.raw.clap, 27));
+//        soundPoolMap.put(soundIDHat1, soundPool.load(this, R.raw.hat1, 28));
+//        soundPoolMap.put(soundIDHat2, soundPool.load(this, R.raw.hat2, 29));
+//
+//    }
 
 
 
