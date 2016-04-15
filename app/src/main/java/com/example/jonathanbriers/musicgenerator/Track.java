@@ -8,8 +8,17 @@ import java.io.ByteArrayOutputStream;
 public class Track {
 
     ByteArrayOutputStream stream;
-    int number;
-    int timeSinceLastNote;
+    private int number;
+    private int timeSinceLastNote;
+    private int instrument;
+
+    public void setInstrument(int instrument) {
+        this.instrument = instrument;
+    }
+
+    public int getInstrument() {
+        return instrument;
+    }
 
     public int getTimeSinceLastNote() {
         return timeSinceLastNote;
