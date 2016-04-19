@@ -10,7 +10,7 @@ import java.util.Random;
  */
 public class Progression {
     private int numberOfBars;
-    private int beatsInBar = 32;
+    private int beatsInBar = 2;
     private int timesChordPlayed;
     private int numberOfChannels;
     private int melodySpeed;
@@ -36,22 +36,26 @@ public class Progression {
     private int notesInChords;
     private Chord[] chords;
     private int[][][][] progression;
+    private int[][] melody;
     private int additionalPitchChords;
     private int additionalPitchMelody;
     private boolean isPatternMelody;
     private boolean isPatternHats;
     private int[] scale;
+    private int key;
 
-    public Progression(int numberOfBars, int numberOfChannels, Random rand, Chord[] chords, int notesInChords, int[] scale) {
+    public Progression(int numberOfBars, int numberOfChannels, Random rand, Chord[] chords, int notesInChords, int[] scale, int key) {
         this.numberOfBars = numberOfBars;
         this.numberOfChannels = numberOfChannels;
         this.rand = rand;
         this.notesInChords = notesInChords;
         this.chords = chords;
         this.scale = scale;
+        this.key = key;
         //We need both numberOfChannels and notesInChords here to distinguish between different channels and notes
         //played simultaneously in the same channel
         progression = new int[numberOfBars][beatsInBar][numberOfChannels][notesInChords];
+        melody = new int[numberOfBars][beatsInBar];
         chooseAdditionalPitch();
         generateChords();
         generateMelody();
@@ -210,6 +214,7 @@ public class Progression {
                 }
                 for (int beat = melodyStart; beat < beatsInBar - melodyEnd; beat += melodySpeed) {
                     progression[bar][beat][1][0] = melodyPattern[p] + additionalPitchMelody;
+                    melody[bar][beat] = melodyPattern[p];
                     p++;
                     if (p == melodyPattern.length) {
                         p = 0;
@@ -232,6 +237,7 @@ public class Progression {
                     int r = rand.nextInt(scale.length);
                     if (rand.nextInt(3) == 1) {
                         progression[bar][beat][1][0] = scale[r] + additionalPitchMelody;
+                        melody[bar][beat] = scale[r];
                     }
                     else {
                         r = rand.nextInt(50);
@@ -240,10 +246,12 @@ public class Progression {
                             if (r < 17) {
                                 r = rand.nextInt(notesInChords);
                                 progression[bar][beat][1][0] = chordProgression[bar].getNotes()[r] + additionalPitchMelody;
+                                melody[bar][beat] = chordProgression[bar].getNotes()[r];
                             }
                             else {
                                 r = rand.nextInt(scale.length);
                                 progression[bar][beat][1][0] = scale[r] + additionalPitchMelody;
+                                melody[bar][beat] = scale[r];
                             }
                         }
                         //Rest
@@ -595,11 +603,19 @@ public class Progression {
 
     public int getHatSpeed() {return hatSpeed;}
 
+    public int getMelodyStart() {return melodyStart;}
+
+    public int getMelodyEnd() {return melodyEnd;}
+
     public boolean getLongNoteMode() {return longNoteMode;}
 
     public boolean getIsPatternMelody() {return isPatternMelody;}
 
     public boolean getIsPatternHats() {return isPatternHats;}
+
+    public int[][] getMelody() {
+        return  melody;
+    }
 
 }
 

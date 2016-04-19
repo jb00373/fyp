@@ -26,10 +26,12 @@ public class AudioController extends MediaController {
     public boolean dispatchKeyEvent(KeyEvent event)
     {
 //            ((Activity) getContext()).finish();
+        if (event.getKeyCode() == KeyEvent.KEYCODE_BACK) {
             Intent intent = new Intent();
             intent.setAction(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_HOME);
             getContext().startActivity(intent);
+        }
         return super.dispatchKeyEvent(event);
     }
 }

@@ -29,6 +29,7 @@ public class MIDIMaker {
 
     // int timeSinceLastNote;
     int tpq;
+    int tempo = 125;
     DataOutputStream data;
 
     int numberOfTracks;
@@ -54,9 +55,13 @@ public class MIDIMaker {
     }
 
 
-    public void setTempo(int tempo) {
-        tpq = tempo;
+    public void setTpq(int tpq) {
+        this.tpq = tpq;
         // tpq = 10000;
+    }
+
+    public void setTempo(int tempo) {
+        this.tempo = tempo;
     }
 
     public Track getTrack(int i) {
@@ -86,13 +91,23 @@ public class MIDIMaker {
     }
 
     public void gen(boolean hasDrums) {
+//        FileOutputStream fo = null;
+//        try {
+//            fo = new FileOutputStream("/storage/emulated/0/MusicGenerator/tempo.midi");
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        DataOutputStream data2 = new DataOutputStream(fo);
         try {
+            numberOfTracks = 2;
             data.writeBytes("MThd");
             data.writeInt(6);
             //Ends in 8 because 3 tracks not 1
             data.writeInt(65537 + numberOfTracks - 1);
             Log.d("TempoMIDI", "" + tpq);
             data.writeShort((short) tpq);
+           // writeTrackTempo();
+            hasDrums = false;
             if (hasDrums) {
                 for (int i = 0; i < numberOfTracks - 1; i++) {
                     writeTrack(i);
@@ -102,6 +117,7 @@ public class MIDIMaker {
 
                 data.writeBytes("MTrk");
                 data.writeInt(tracks[numberOfTracks - 1].getStream().size() + 7);
+
                 data.writeShort((short) 201); //c9
                 data.writeByte(r);
                 data.write(tracks[numberOfTracks - 1].getStream().toByteArray());
@@ -123,10 +139,37 @@ public class MIDIMaker {
     public void writeTrack(int i) {
         try {
             data.writeBytes("MTrk");
-            data.writeInt(tracks[i].getStream().size() + 7);
-            data.writeShort((short) 192 + i); //c0
+            if (i == 0) {
+                data.writeInt(tracks[i].getStream().size() + 14);
+                data.writeInt(16732419);
+                data.writeInt (1000 * 60 / tempo);
+                //ff5804
+                data.writeInt(16734212);
+                //04021808
+                data.writeInt(67246088);
+            }
+            else {
+                data.writeInt(tracks[i].getStream().size() + 7);
+            }
+            data.writeShort((short) 192 + i); //192 = c0
             data.writeByte(tracks[i].getInstrument());
+
             data.write(tracks[i].getStream().toByteArray());
+            data.writeInt(16723712);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void writeTrackTempo() {
+        try {
+            data.writeBytes("MTrk");
+//            data.writeInt(10 + tracks[0].getStream().size());
+            data.writeInt(16732419);
+            data.writeShort((short)1000 * 60/tempo);
+//            data.writeShort((short) 192 + i); //c0
+//            data.writeByte(tracks[i].getInstrument());
+//            data.write(tracks[i].getStream().toByteArray());
             data.writeInt(16723712);
         } catch (IOException e) {
             e.printStackTrace();

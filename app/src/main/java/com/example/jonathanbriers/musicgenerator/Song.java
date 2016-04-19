@@ -31,6 +31,7 @@ public class Song {
     boolean structured;
     boolean hasIntro;
     boolean hasOutro;
+    int rating;
 
     public ArrayList<Progression> getProgressions() {
         return progressions;
@@ -93,9 +94,9 @@ public class Song {
 
     void generateProgressions() {
         if (!structured) {
-            for (int i = 0; i < numberOfProgressions; i++) {
+            for (int i = 0; i < 1; i++) {
                 chooseNumberOfBars();
-                Progression p = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale);
+                Progression p = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
                 progressions.add(i, p);
             }
         }
@@ -105,9 +106,9 @@ public class Song {
     }
 
     void chooseStructure() {
-        verse = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale);
-        chorus = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale);
-        bridge = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale);
+        verse = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
+        chorus = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
+        bridge = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
         chooseHasIntro();
         chooseHasOutro();
         int start = 0;
@@ -124,7 +125,7 @@ public class Song {
             start = start + 1;
         }
         if (hasOutro) {
-            outro = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale);
+            outro = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
             progressions.add(numberOfProgressions - 1, outro);
             end = end - 1;
         }
@@ -161,6 +162,10 @@ public class Song {
         }
     }
 
+    void setRating(int rating) {
+        this.rating = rating;
+    }
+
     void chooseTempo() {
         //????
     }
@@ -190,6 +195,8 @@ public class Song {
             tracks[numberOfChannels - 1].getStream().reset();
         }
     }
+
+    public int getRating() { return rating;}
 
     public int getTempo() {
         return  tempo;

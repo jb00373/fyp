@@ -4,9 +4,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
-import android.media.Rating;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -21,6 +21,8 @@ import android.widget.EditText;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -60,6 +62,8 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
     MediaPlayer mediaPlayer;
     FileDescriptor fd;
     TextFileReader tfr;
+    SharedPreferences mPrefs;
+    AI ai;
     //service
     private AudioPlayer audioPlayer;
     private Intent playIntent;
@@ -157,7 +161,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         btnRate.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View v) {
-                writeSongToFile();}
+                rate();}
         });
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -176,6 +180,8 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
                 setController();
             }
         });
+
+        ai = new AI(getPreferences(MODE_PRIVATE));
     }
 
     private ServiceConnection musicConnection = new ServiceConnection(){
@@ -210,7 +216,6 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
     private void setController(){
         if (ac == null) {
             ac = new AudioController(this);
-
         }
         //set previous and next button listeners
         //set and show
@@ -346,57 +351,26 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         startActivityForResult(i, 1);
     }
 
-    public void writeSongToFile() {
+    public void rate() {
+        generator.getSong().setRating((int)(ratingBar.getRating() * 2));
+        mPrefs = getPreferences(MODE_PRIVATE);
+        int howMany = mPrefs.getAll().size();
+        SharedPreferences.Editor prefsEditor = mPrefs.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(generator.getSong());
+        prefsEditor.putString(((Integer)(howMany)).toString(), json);
+        prefsEditor.commit();
+        ratingBar.setRating(0.0f);
+    }
+
+
+    public void readRatedSongs() {
         String title = "/storage/emulated/0/MusicGenerator/RatedSongs.txt";
         File file = new File(title);
-        Song song = generator.getSong();
         try {
-            FileWriter fw = new FileWriter(file, true);
-            if (file.exists()) {
-                fw.append(txtSeed.getText().toString() + "," + ratingBar.getRating() + "\n");
-                Track[] tracks = song.getTracks();
-                for (int i = 0; i < song.getNumberOfChannels(); i++) {
-                    fw.append(i + "," + tracks[i].getInstrument() + ",");
-                }
-                fw.append("\n");
-                fw.append(""+ song.getTempo() +"\n");
-                fw.append("" + song.getKey() + "\n");
-                fw.append("" + song.getDorian() + "\n");
-                fw.append("" + song.getMixolydian() + "\n");
-                fw.append("" + song.getHasDrums() + "\n");
-                for (int i = 0; i < song.getNumberOfProgressions(); i++) {
-                    fw.append("" +i + "\n");
-                    Progression p = song.getProgressions().get(i);
-                    fw.append(p.getTimesChordPlayed() +","+
-                            p.getMelodySpeed()+","+
-                            p.getDrumSpeed() +","+
-                            p.getHatSpeed()+","+
-                            p.getBassSpeed()+"," +
-                            p.getHasDrums()+","+
-                            p.getHasBass() +","+
-                            p.getArpeggio()+","+
-                            p.getIsPatternMelody()+","+
-                            p.getIsPatternHats());
-                    int[][][][] music = p.getProgression();
-                    for (int j = 0; j < song.getNumberOfChannels(); j++) {
-                        fw.append("" +j + "\n");
-                        for (int c = 0; c < p.getNotesInChords(); c++) {
-                            for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
-                                for (int beat = 0; beat < p.getBeatsInBar(); beat++) {
-                                    fw.append(""+music[bar][beat][j][c] + ",");
-                                }
-                            }
-                            fw.append("\n");
-                        }
-                        fw.append("\n");
-                    }
-                }
-            }
-            fw.append("end\n");
-            fw.flush();
-            fw.close();
-        }
-        catch (IOException e){
+            BufferedReader br = new BufferedReader(new FileReader(file));
+
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -511,3 +485,58 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
 //                }
 //            }
 //        });
+
+//    public void writeSongToFile() {
+//        String title = "/storage/emulated/0/MusicGenerator/RatedSongs.txt";
+//        File file = new File(title);
+//        Song song = generator.getSong();
+//        try {
+//            FileWriter fw = new FileWriter(file, true);
+//            if (file.exists()) {
+//                fw.append(txtSeed.getText().toString() + "," + ratingBar.getRating() + "\n");
+//                Track[] tracks = song.getTracks();
+//                for (int i = 0; i < song.getNumberOfChannels(); i++) {
+//                    fw.append(i + "," + tracks[i].getInstrument() + ",");
+//                }
+//                fw.append("\n");
+//                fw.append(""+ song.getTempo() +"\n");
+//                fw.append("" + song.getKey() + "\n");
+//                fw.append("" + song.getDorian() + "\n");
+//                fw.append("" + song.getMixolydian() + "\n");
+//                fw.append("" + song.getHasDrums() + "\n");
+//                for (int i = 0; i < song.getNumberOfProgressions(); i++) {
+//                    fw.append("" +i + "\n");
+//                    Progression p = song.getProgressions().get(i);
+//                    fw.append(p.getTimesChordPlayed() +","+
+//                            p.getMelodySpeed()+","+
+//                            p.getDrumSpeed() +","+
+//                            p.getHatSpeed()+","+
+//                            p.getBassSpeed()+"," +
+//                            p.getHasDrums()+","+
+//                            p.getHasBass() +","+
+//                            p.getArpeggio()+","+
+//                            p.getIsPatternMelody()+","+
+//                            p.getIsPatternHats());
+//                    int[][][][] music = p.getProgression();
+//                    for (int j = 0; j < song.getNumberOfChannels(); j++) {
+//                        fw.append("" +j + "\n");
+//                        for (int c = 0; c < p.getNotesInChords(); c++) {
+//                            for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
+//                                for (int beat = 0; beat < p.getBeatsInBar(); beat++) {
+//                                    fw.append(""+music[bar][beat][j][c] + ",");
+//                                }
+//                            }
+//                            fw.append("\n");
+//                        }
+//                        fw.append("\n");
+//                    }
+//                }
+//            }
+//            fw.append("end\n");
+//            fw.flush();
+//            fw.close();
+//        }
+//        catch (IOException e){
+//            e.printStackTrace();
+//        }
+//    }
