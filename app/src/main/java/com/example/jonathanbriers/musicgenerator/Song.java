@@ -27,11 +27,15 @@ public class Song {
     int numberOfBars;
     Track[] tracks;
     int maxProgressions = 10;
+    int minProgressions = 3;
     Progression intro, verse, chorus, bridge, outro;
     boolean structured;
     boolean hasIntro;
     boolean hasOutro;
     int rating;
+    int start, end;
+    int maxTempo = 300;
+    int minTempo = 150;
 
     public ArrayList<Progression> getProgressions() {
         return progressions;
@@ -52,12 +56,14 @@ public class Song {
         chooseTempo();
         chooseNumberOfChannels();
         chooseInstruments();
+        chooseNumberOfBars();
+        chooseStructured();
         generateProgressions();
         Log.d("Done", "done");
     }
 
     public void chooseNumberOfProgressions() {
-        numberOfProgressions = rand.nextInt(maxProgressions) + 1;
+        numberOfProgressions = rand.nextInt(maxProgressions - minProgressions) + minProgressions;
     }
 
     public int getNumberOfProgressions() {
@@ -73,29 +79,49 @@ public class Song {
         }
     }
 
+
+    int[] chordInstruments = new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,40,41,42,44,45,46,
+    48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,75,77,78,79,88,89,90,91,92,93,94,95 };
+
+    int[] melodyInstruments = new int[] {0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,45,46,
+            48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,75,77,78,79,80,81,82,83,84,85,104,105,106
+    ,107,108,109,110,111,112};
+
     public void chooseInstruments() {
         int j = numberOfChannels;
         if (hasDrums) {
             j--;
         }
         for (int i = 0; i < j; i++) {
+            //Chords
+            if (i == 0) {
+                int r = rand.nextInt(chordInstruments.length);
+                tracks[i].setInstrument(chordInstruments[r]);
+                Log.d("Chord instrument: ",""+chordInstruments[r]);
+            }
+            //Melody
+            else if (i == 1) {
+                int r = rand.nextInt(melodyInstruments.length);
+                tracks[i].setInstrument(melodyInstruments[r]);
+                Log.d("Melody instrument: ",""+melodyInstruments[r]);
+
+            }
             //Bass
             if (i == 2) {
                 int r = rand.nextInt(9);
                 tracks[i].setInstrument(32 + r);
             }
             else {
-                int r = rand.nextInt(96);
-                tracks[i].setInstrument(r);
-                Log.d("Generator instrument:", "" + r);
+                int r = rand.nextInt(melodyInstruments.length);
+                tracks[i].setInstrument(melodyInstruments[r]);
+                Log.d("Generator instrument:", "" + melodyInstruments[r]);
             }
         }
     }
 
     void generateProgressions() {
         if (!structured) {
-            for (int i = 0; i < 1; i++) {
-                chooseNumberOfBars();
+            for (int i = 0; i < numberOfProgressions; i++) {
                 Progression p = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
                 progressions.add(i, p);
             }
@@ -105,48 +131,121 @@ public class Song {
         }
     }
 
+    public void chooseStructured() {
+        if (rand.nextInt(3) == 0) {
+            structured = false;
+        }
+        else {
+            structured = true;
+        }
+    }
+
     void chooseStructure() {
         verse = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
         chorus = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
         bridge = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
         chooseHasIntro();
         chooseHasOutro();
+        Progression originalVerse;
+        Progression originalChorus;
         int start = 0;
         int end = numberOfProgressions - 1;
         if (hasIntro) {
             int r = rand.nextInt(2);
             if (r == 0) {
+                originalVerse = verse;
                 intro = verse.stripDown();
+                verse = originalVerse;
             }
             else if (r == 1) {
+                originalChorus = chorus;
                 intro = chorus.stripDown();
+                chorus = originalChorus;
             }
             progressions.add(0, intro);
-            start = start + 1;
         }
-        if (hasOutro) {
-            outro = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
-            progressions.add(numberOfProgressions - 1, outro);
-            end = end - 1;
-        }
+
         if (rand.nextInt(2) == 0) {
             for (int i = start; i + 1 < end; i++) {
-                progressions.add(i, chorus);
-                progressions.add(i + 1, verse);
+                if (i > 0) {
+                    if (rand.nextInt(4) > 0) {
+                        if (rand.nextInt(2) == 0) {
+                            progressions.add(i, chorus.buildUp());
+                        }
+                        else {
+                            progressions.add(i, chorus.mutateProgression());
+                        }
+                    }
+                    else {
+                        progressions.add(i, chorus);
+                    }
+                    if (rand.nextInt(4) > 0) {
+                        if (rand.nextInt(2) == 0) {
+                            progressions.add(i + 1, verse.buildUp());
+                        }
+                        else {
+                            progressions.add(i + 1, verse.mutateProgression());
+                        }
+                    }
+                    else {
+                        progressions.add(i + 1, verse);
+                    }
+                }
+                else {
+                    progressions.add(i, chorus);
+                    progressions.add(i + 1, verse);
+                }
             }
         }
         else {
             for (int i = start; i + 1 < end; i++) {
-                progressions.add(i, verse);
-                progressions.add(i + 1, chorus);
+                if (i > 0) {
+                    if (rand.nextInt(4) > 0) {
+                        if (rand.nextInt(2) == 0) {
+                            progressions.add(i, verse.buildUp());
+                        }
+                        else {
+                            progressions.add(i, verse.mutateProgression());
+                        }
+                    }
+                    else {
+                        progressions.add(i, verse);
+                    }
+                    if (rand.nextInt(4) > 0) {
+                        if (rand.nextInt(2) == 0) {
+                            progressions.add(i + 1, chorus.buildUp());
+                        }
+                        else {
+                            progressions.add(i + 1, chorus.mutateProgression());
+                        }
+                    }
+                    else {
+                        progressions.add(i + 1, chorus);
+                    }
+                }
+                else {
+                    progressions.add(i, verse);
+                    progressions.add(i + 1, chorus);
+                }
             }
         }
-
+        if (hasOutro) {
+            if (rand.nextInt(2) == 0) {
+                outro = verse.stripDown();
+            }
+            else {
+                outro = chorus.stripDown();
+            }
+            progressions.add(numberOfProgressions - 1, outro);
+        }
     }
+
+
 
     void chooseHasIntro() {
         if (rand.nextInt(2) == 0) {
             hasIntro = true;
+            start = start + 1;
         }
         else {
             hasIntro = false;
@@ -154,8 +253,9 @@ public class Song {
     }
 
     void chooseHasOutro() {
-        if (rand.nextInt(2) == 0) {
+        if (rand.nextInt(2) == 0 && numberOfProgressions > 1) {
             hasOutro = true;
+            end = end - 1;
         }
         else {
             hasOutro = false;
@@ -167,14 +267,14 @@ public class Song {
     }
 
     void chooseTempo() {
-        //????
+        tempo = rand.nextInt(maxTempo - minTempo) + minTempo;
+        Log.d("Tempo", ""+tempo);
     }
 
     void chooseNumberOfBars() {
-        int[] numbersOfBars = {4, 8};
+        int[] numbersOfBars = {4};
         numberOfBars = numbersOfBars[rand.nextInt(numbersOfBars.length)];
     }
-
 
     void chooseNumberOfChannels() {
         int[] numbersOfChannels = {4, 5, 6, 7 , 8 ,9};
@@ -321,6 +421,24 @@ public class Song {
 
     public boolean getHasDrums() {
         return hasDrums;
+    }
+
+    public boolean getHasBass() {
+        for (Progression progression : progressions) {
+            if (progression.getHasBass()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean getHasExtras() {
+        for (Progression progression : progressions) {
+            if (progression.getHasExtras()) {
+                return true;
+            }
+        }
+        return false;
     }
 
 

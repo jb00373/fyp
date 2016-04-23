@@ -1,5 +1,7 @@
 package com.example.jonathanbriers.musicgenerator;
 
+import android.content.Context;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import java.util.Random;
@@ -13,20 +15,17 @@ import java.util.Random;
  */
 public class Generator {
 
-    int tempo;
-    int notesInChord = 3;
-    int[] beatsInProg;
-    int[][][] song;
+    int tpq;
     Random rand;
-    int channels = 10;
     long seed;
     MIDIMaker midi;
-    int timesChordPlayed;
     Song theSong;
+    AI ai;
 
-    public Generator(MIDIMaker m) {
+    public Generator(MIDIMaker m, Context context) {
         rand = new Random(seed);
         midi = m;
+        ai = new AI(PreferenceManager.getDefaultSharedPreferences(context));
     }
 
     void arrayToMIDI() {
@@ -34,8 +33,8 @@ public class Generator {
             int[][][][] pm = p.getProgression();
             //Chords/Channel0
             for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
-                notesInChord = p.getNotesInChords();
-                timesChordPlayed = p.getTimesChordPlayed();
+                int notesInChord = p.getNotesInChords();
+                int timesChordPlayed = p.getTimesChordPlayed();
                 int beatsInBar = p.getBeatsInBar();
                 if (p.getArpeggio()) {
                     for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed / notesInChord) {
@@ -60,8 +59,8 @@ public class Generator {
             }
             //Melody/Channel1
             for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
-                notesInChord = p.getNotesInChords();
-                timesChordPlayed = p.getTimesChordPlayed();
+                int notesInChord = p.getNotesInChords();
+                int timesChordPlayed = p.getTimesChordPlayed();
                 int beatsInBar = p.getBeatsInBar();
                 int melodySpeed = p.getMelodySpeed();
 //                boolean rest = false;
@@ -78,69 +77,103 @@ public class Generator {
                 }
             }
             //Bass/Channel2
-            if (p.getHasBass()) {
-                for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
-                    int beatsInBar = p.getBeatsInBar();
-                    int bassSpeed = p.getBassSpeed();
-                    for (int beat = 0; beat < beatsInBar; beat += bassSpeed) {
-                        if (pm[bar][beat][2][0] < 0) {
-                            midi.play(0, 0, midi.getTrack(2));
-                            midi.stop(0, bassSpeed, midi.getTrack(2));
+            if (theSong.getHasBass()) {
+                if (p.getHasBass()) {
+                    for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
+                        int beatsInBar = p.getBeatsInBar();
+                        int bassSpeed = p.getBassSpeed();
+                        for (int beat = 0; beat < beatsInBar; beat += bassSpeed) {
+                            if (pm[bar][beat][2][0] < 0) {
+                                midi.play(0, 0, midi.getTrack(2));
+                                midi.stop(0, bassSpeed, midi.getTrack(2));
 //                        rest = true;
-                        }
-                        else {
-                            midi.play(pm[bar][beat][2][0], 0, midi.getTrack(2));
-                            midi.stop(pm[bar][beat][2][0], bassSpeed, midi.getTrack((2)));
+                            } else {
+                                midi.play(pm[bar][beat][2][0], 0, midi.getTrack(2));
+                                midi.stop(pm[bar][beat][2][0], bassSpeed, midi.getTrack((2)));
+                            }
                         }
                     }
                 }
+                else {
+                    midi.play(0, 0, midi.getTrack(2));
+                    midi.stop(0, p.getBeatsInBar() * p.getNumberOfBars(), midi.getTrack(2));
+                }
             }
             //Drums
-            if (p.getHasDrums()) {
-                Log.d("hasDrums = ", ""+p.getHasDrums());
-                for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
-                    int beatsInBar = p.getBeatsInBar();
-                    int drumSpeed = p.getDrumSpeed();
-                    if (p.getHatSpeed() > drumSpeed) {
-                        drumSpeed = p.getHatSpeed();
-                    }
-                    int drumTrack = theSong.getNumberOfChannels() - 1;
-                    for (int beat = 0; beat < beatsInBar; beat += drumSpeed) {
-                        //Rest
-                        if (pm[bar][beat][drumTrack][0] < 0) {
-                            midi.play(0, 0, midi.getTrack(drumTrack));
-                            midi.stop(0, drumSpeed, midi.getTrack(drumTrack));
+            if (theSong.getHasDrums()) {
+                int drumTrack = theSong.getNumberOfChannels() - 1;
+                if (p.getHasDrums()) {
+                    Log.d("hasDrums = ", "" + p.getHasDrums());
+                    for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
+                        int beatsInBar = p.getBeatsInBar();
+                        int drumSpeed = p.getDrumSpeed();
+                        if (p.getHatSpeed() > drumSpeed) {
+                            drumSpeed = p.getHatSpeed();
                         }
-                        else {
-                            if (p.getHasHats()) {
-                                if (pm[bar][beat][drumTrack][0] != 0) {
+                        for (int beat = 0; beat < beatsInBar; beat += drumSpeed) {
+                            //Rest
+                            if (pm[bar][beat][drumTrack][0] < 0) {
+                                midi.play(0, 0, midi.getTrack(drumTrack));
+                                midi.stop(0, drumSpeed, midi.getTrack(drumTrack));
+                            } else {
+                                if (p.getHasHats()) {
+                                    if (pm[bar][beat][drumTrack][0] != 0) {
+                                        midi.play(pm[bar][beat][drumTrack][0], 0, midi.getTrack(drumTrack));
+                                        midi.play(pm[bar][beat][drumTrack][1], 0, midi.getTrack(drumTrack));
+                                        midi.stop(pm[bar][beat][drumTrack][1], drumSpeed, midi.getTrack(drumTrack));
+                                        midi.stop(pm[bar][beat][drumTrack][0], 0, midi.getTrack(drumTrack));
+                                    } else {
+                                        midi.play(pm[bar][beat][drumTrack][1], 0, midi.getTrack(drumTrack));
+                                        midi.stop(pm[bar][beat][drumTrack][1], drumSpeed, midi.getTrack(drumTrack));
+                                    }
+                                } else {
                                     midi.play(pm[bar][beat][drumTrack][0], 0, midi.getTrack(drumTrack));
-                                    midi.play(pm[bar][beat][drumTrack][1], 0, midi.getTrack(drumTrack));
-                                    midi.stop(pm[bar][beat][drumTrack][1], drumSpeed, midi.getTrack(drumTrack));
-                                    midi.stop(pm[bar][beat][drumTrack][0], 0, midi.getTrack(drumTrack));
+                                    if (pm[bar][beat][drumTrack][1] != 0) {
+                                        midi.play(pm[bar][beat][drumTrack][1], 0, midi.getTrack(drumTrack));
+                                        midi.stop(pm[bar][beat][drumTrack][1], drumSpeed, midi.getTrack(drumTrack));
+                                        midi.stop(pm[bar][beat][drumTrack][0], 0, midi.getTrack(drumTrack));
+                                    } else {
+                                        midi.stop(pm[bar][beat][drumTrack][0], drumSpeed, midi.getTrack(drumTrack));
+                                    }
+
                                 }
-                                else {
-                                    midi.play(pm[bar][beat][drumTrack][1], 0, midi.getTrack(drumTrack));
-                                    midi.stop(pm[bar][beat][drumTrack][1], drumSpeed, midi.getTrack(drumTrack));
-                                }
-                            }
-                            else {
-                                midi.play(pm[bar][beat][drumTrack][0], 0, midi.getTrack(drumTrack));
-                                midi.stop(pm[bar][beat][drumTrack][0], drumSpeed, midi.getTrack(drumTrack));
                             }
                         }
                     }
+                }
+                else {
+                    midi.play(0, 0, midi.getTrack(drumTrack));
+                    midi.stop(0, p.getBeatsInBar() * p.getNumberOfBars(), midi.getTrack(drumTrack));
+                }
+            }
+            //Extras
+            //Channel 3
+            if (theSong.getHasExtras()) {
+                if (p.getHasExtras()) {
+                    for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
+                        int beatsInBar = p.getBeatsInBar();
+                        int timesChordPlayed = p.getTimesChordPlayed();
+                        for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed) {
+                            midi.play(pm[bar][beat][0][0], 0, midi.getTrack(3));
+                            midi.stop(pm[bar][beat][0][0], beatsInBar / timesChordPlayed, midi.getTrack(3));
+                        }
+                    }
+                }
+                else {
+                    midi.play(0, 0, midi.getTrack(3));
+                    midi.stop(0, p.getBeatsInBar() * p.getNumberOfBars(), midi.getTrack(3));
                 }
             }
         }
     }
 
 
-    void chooseTempo() {
-        tempo = 800;
-        Log.d("Tempo: ", "" + tempo);
-        midi.setTpq(tempo);
+    void chooseTpq() {
+        tpq = 800;
+        Log.d("Tpq: ", "" + tpq);
+        midi.setTpq(tpq);
     }
+
 
 
     public Song getSong() {
@@ -149,16 +182,19 @@ public class Generator {
 
 
     public void newSong() {
-        chooseTempo();
+        chooseTpq();
         //New Version
         theSong = new Song(rand);
+        midi.setTempo(theSong.getTempo());
         midi.setTracks(theSong.getTracks());
         arrayToMIDI();
         midi.gen(theSong.getHasDrums());
     }
 
 
-
+    public int getTpq() {
+        return tpq;
+    }
 
     String numberToNote(int note) {
         switch (note) {
@@ -212,10 +248,6 @@ public class Generator {
                 return "B";
         }
         return null;
-    }
-
-    public float getTempo() {
-        return tempo;
     }
 
     public void setSeed(long seed) {

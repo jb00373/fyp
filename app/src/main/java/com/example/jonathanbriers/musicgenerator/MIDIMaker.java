@@ -29,7 +29,7 @@ public class MIDIMaker {
 
     // int timeSinceLastNote;
     int tpq;
-    int tempo = 125;
+    int tempo;
     DataOutputStream data;
 
     int numberOfTracks;
@@ -91,23 +91,15 @@ public class MIDIMaker {
     }
 
     public void gen(boolean hasDrums) {
-//        FileOutputStream fo = null;
-//        try {
-//            fo = new FileOutputStream("/storage/emulated/0/MusicGenerator/tempo.midi");
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        }
-//        DataOutputStream data2 = new DataOutputStream(fo);
         try {
-            numberOfTracks = 2;
             data.writeBytes("MThd");
             data.writeInt(6);
             //Ends in 8 because 3 tracks not 1
-            data.writeInt(65537 + numberOfTracks - 1);
+            data.writeInt(65537 + numberOfTracks);
             Log.d("TempoMIDI", "" + tpq);
             data.writeShort((short) tpq);
-           // writeTrackTempo();
-            hasDrums = false;
+            writeTrackTempo();
+            Log.d("HasDrums =" , ""+hasDrums);
             if (hasDrums) {
                 for (int i = 0; i < numberOfTracks - 1; i++) {
                     writeTrack(i);
@@ -139,21 +131,9 @@ public class MIDIMaker {
     public void writeTrack(int i) {
         try {
             data.writeBytes("MTrk");
-            if (i == 0) {
-                data.writeInt(tracks[i].getStream().size() + 14);
-                data.writeInt(16732419);
-                data.writeInt (1000 * 60 / tempo);
-                //ff5804
-                data.writeInt(16734212);
-                //04021808
-                data.writeInt(67246088);
-            }
-            else {
-                data.writeInt(tracks[i].getStream().size() + 7);
-            }
+            data.writeInt(tracks[i].getStream().size() + 7);
             data.writeShort((short) 192 + i); //192 = c0
             data.writeByte(tracks[i].getInstrument());
-
             data.write(tracks[i].getStream().toByteArray());
             data.writeInt(16723712);
         } catch (IOException e) {
@@ -164,9 +144,23 @@ public class MIDIMaker {
     public void writeTrackTempo() {
         try {
             data.writeBytes("MTrk");
-//            data.writeInt(10 + tracks[0].getStream().size());
+            data.writeInt(19);
+            //ff5804
+            data.writeInt(16734212);
+            //04021808
+            data.writeInt(67246088);
+            //ff5103
             data.writeInt(16732419);
-            data.writeShort((short)1000 * 60/tempo);
+//            data.writeInt(400000);
+//            tempo = 400000;
+            int hexTempo = intToHex(100000 * 60/tempo);
+            data.writeByte(Integer.parseInt(Integer.toString(hexTempo).substring(0, 2)));
+            data.writeByte(Integer.parseInt(Integer.toString(hexTempo).substring(2, 4)));
+            data.writeByte(Integer.parseInt(Integer.toString(hexTempo).substring(4, 6)));
+//            data.writeByte(6);
+//            data.writeByte(26);
+//            data.write(128);
+//            data.writeShort((short)1000000 * 60/tempo);
 //            data.writeShort((short) 192 + i); //c0
 //            data.writeByte(tracks[i].getInstrument());
 //            data.write(tracks[i].getStream().toByteArray());
@@ -174,6 +168,10 @@ public class MIDIMaker {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public int intToHex(int theInt) {
+        return Integer.valueOf(String.valueOf(theInt), 16);
     }
 
 
@@ -350,3 +348,17 @@ public class MIDIMaker {
 //    }
 
 //
+//            if (i == 0) {
+//                data.writeInt(tracks[i].getStream().size() + 14);
+//                //ff 5103
+//                data.writeInt(16732419);
+////                data.writeShort((short)(1000 * 60 / tempo));
+//                data.writeShort((short)5);
+//                data.writeShort((short)184);
+//                data.writeShort((short)216);
+//                //ff5804
+//                data.writeInt(16734212);
+//                //04021808
+//                data.writeInt(67246088);
+//            }
+//            else {

@@ -58,19 +58,23 @@ public class AI {
         }
     }
 
+    ArrayList<int[]> nextBestMelodies = new ArrayList<>();
     public void createBestMelody() {
         //Get melodies
         for (int i = 0; i < top; i++) {
             Song song = songs.get(i);
             for (int j = 0; j < song.getNumberOfProgressions(); j++) {
                 Progression p = song.getProgressions().get(j);
+                //Gets melodies with bestMelodySpeed
+                //Includes mutations - maybe only get original patterns? And then ifMutated?
                 if (p.getMelodySpeed() == bestMelodySpeed) {
-                    //Gets melodies with bestMelodySpeed.
-                    //Includes mutations - maybe only get original patterns? And then ifMutated?
                     melodies.add(songs.get(i).getProgressions().get(j).getMelody());
                 }
-                else if (p.getMelodySpeed() == nextBestMelodySpeed) {
-
+            }
+            for (int j = 0; j < song.getNumberOfProgressions(); j++) {
+                Progression p = song.getProgressions().get(j);
+                if (p.getMelodySpeed() == nextBestMelodySpeed) {
+                    melodies.add(songs.get(i).getProgressions().get(j + melodies.size()).getMelody());
                 }
             }
         }

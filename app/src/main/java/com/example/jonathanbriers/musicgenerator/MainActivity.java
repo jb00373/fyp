@@ -7,6 +7,7 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -17,6 +18,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -54,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
     Button btnSave;
     Button btnLoad;
     Button btnRate;
+    CheckBox cbxInfite;
     RatingBar ratingBar;
     Integer initialSeed;
     String filename;
@@ -63,7 +66,6 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
     FileDescriptor fd;
     TextFileReader tfr;
     SharedPreferences mPrefs;
-    AI ai;
     //service
     private AudioPlayer audioPlayer;
     private Intent playIntent;
@@ -90,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
 
         filename = "/storage/emulated/0/MusicGenerator/music.midi";
         mediaPlayer = new MediaPlayer();
+
         prepareSeed();
         newSong();
 
@@ -164,16 +167,19 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
                 rate();}
         });
 
+        cbxInfite = new CheckBox((this));
+        cbxInfite = (CheckBox)findViewById(R.id.cbxInfinite);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
-        maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-        curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        leftVolume  = curVolume/maxVolume;
-        rightVolume = curVolume/maxVolume;
-        priority = 1;
-        no_loop = 0;
+//        AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+//        maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+//        curVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+//        leftVolume  = curVolume/maxVolume;
+//        rightVolume = curVolume/maxVolume;
+//        priority = 1;
+//        no_loop = 0;
         audioPlayer = new AudioPlayer(mediaPlayer, filename);
         findViewById(R.id.player_control).post(new Runnable() {
             public void run() {
@@ -181,7 +187,19 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             }
         });
 
-        ai = new AI(getPreferences(MODE_PRIVATE));
+        mediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+
+            @Override
+            public void onCompletion(MediaPlayer mp) {
+                if (cbxInfite.isChecked()) {
+                    prepareSeed();
+                    newSong();
+                    audioPlayer.go();
+                }
+            }
+
+        });
+
     }
 
     private ServiceConnection musicConnection = new ServiceConnection(){
@@ -270,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             FileOutputStream fo = new FileOutputStream(filename);
             data = new DataOutputStream(fo);
             MIDIMaker m = new MIDIMaker(data, filename);
-            generator = new Generator(m);
+            generator = new Generator(m, getApplicationContext());
 
             generator.setSeed(getSeedFromTxt());
             generator.newSong();
@@ -295,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             FileOutputStream fo = new FileOutputStream(title);
             data = new DataOutputStream(fo);
             MIDIMaker m = new MIDIMaker(data, title);
-            generator = new Generator(m);
+            generator = new Generator(m, getApplicationContext());
             generator.setSeed(getSeedFromTxt());
             generator.newSong();
             Context context = getApplicationContext();
@@ -361,18 +379,6 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         prefsEditor.putString(((Integer)(howMany)).toString(), json);
         prefsEditor.commit();
         ratingBar.setRating(0.0f);
-    }
-
-
-    public void readRatedSongs() {
-        String title = "/storage/emulated/0/MusicGenerator/RatedSongs.txt";
-        File file = new File(title);
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {

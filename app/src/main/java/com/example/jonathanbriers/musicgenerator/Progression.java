@@ -6,11 +6,10 @@ import java.util.Random;
 
 /**
  * Created by Jonny on 01/04/2016.
- * Remember – stopping of notes will be handled in generator class!
  */
 public class Progression {
     private int numberOfBars;
-    private int beatsInBar = 2;
+    private int beatsInBar = 16;
     private int timesChordPlayed;
     private int numberOfChannels;
     private int melodySpeed;
@@ -20,6 +19,8 @@ public class Progression {
     private boolean hasDrums;
     private boolean hasHats;
     private boolean hasBass;
+    private boolean hasExtras;
+    private boolean hasChords;
     private boolean arpeggio;
     private boolean arpeggio2;
     private boolean longNoteMode;
@@ -57,10 +58,26 @@ public class Progression {
         progression = new int[numberOfBars][beatsInBar][numberOfChannels][notesInChords];
         melody = new int[numberOfBars][beatsInBar];
         chooseAdditionalPitch();
+        chooseHasChords();
         generateChords();
+        if (hasChords) {
+            addChords();
+        }
         generateMelody();
-        addDrums();
-        addBass();
+        chooseHasDrums();
+        if (hasDrums) {
+            addDrums();
+        }
+        chooseHasBass();
+        if (hasBass) {
+            addBass();
+        }
+    }
+
+    void chooseHasChords() {
+        if (rand.nextInt(4) > 0) {
+            hasChords = true;
+        }
     }
 
     void chooseTimesChordPlayed() {
@@ -257,6 +274,7 @@ public class Progression {
                         //Rest
                         else {
                             progression[bar][beat][1][0] = -melodySpeed;
+                            melody[bar][beat] = 0;
                         }
                     }
                 }
@@ -301,7 +319,7 @@ public class Progression {
 
     public void addDrums() {
         int r = 0;
-        chooseHasDrums();
+//        chooseHasDrums();
         if (hasDrums) {
             chooseDrumSpeed();
             createDrumPattern(chooseDrumPatternLength());
@@ -391,7 +409,7 @@ public class Progression {
 
     int additionalPitchBass = 24;
     public void addBass() {
-        chooseHasBass();
+//        chooseHasBass();
         if (hasBass) {
             chooseBassSpeed();
             chooseStartEndBass();
@@ -468,33 +486,41 @@ public class Progression {
 
     public void generateChords() {
         chordProgression = new Chord[numberOfBars];
-        int r = 0;
+        int r;
         chooseTimesChordPlayed();
         chooseProgHasArpeggio();
         for (int bar = 0; bar < numberOfBars; bar++) {
+            if (bar == 2) {
+                Log.d("", "");
+            }
             if (bar == numberOfBars - 1) {
                 r = rand.nextInt(10);
                 if (r == 0) {
                     chooseTimesChordPlayed();
-                }
-                else if (r == 1) {
+                } else if (r == 1) {
                     chooseProgHasArpeggio();
                 }
             }
             chordProgression[bar] = chords[rand.nextInt(chords.length)];
+        }
+    }
+
+    public void addChords() {
+        for (int bar = 0; bar < numberOfBars; bar++) {
             if (arpeggio) {
                 int[] arp = getArpeggioOrder(notesInChords);
                 int n = 0;
-                for (int beat = 0; beat < beatsInBar; beat += beatsInBar/timesChordPlayed/notesInChords) {
+                if (timesChordPlayed > notesInChords) {
+                    timesChordPlayed = notesInChords;
+                }
+                for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed / notesInChords) {
                     progression[bar][beat][0][0] = chordProgression[bar].getNotes()[arp[n]] + additionalPitchChords;
                     if (n < notesInChords - 1) {
                         n++;
-                    }
-                    else n = 0;
+                    } else n = 0;
                 }
-            }
-            else {
-                for (int beat = 0; beat < beatsInBar; beat += beatsInBar/timesChordPlayed) {
+            } else {
+                for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed) {
                     for (int n = 0; n < notesInChords; n++) {
                         progression[bar][beat][0][n] = chordProgression[bar].getNotes()[n] + additionalPitchChords;
                     }
@@ -503,9 +529,33 @@ public class Progression {
         }
     }
 
+    public void addFifths() {
+        for (int bar = 0; bar < numberOfBars; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed) {
+                progression[bar][beat][3][0] = chordProgression[bar].getNotes()[2] + additionalPitchChords;
+            }
+        }
+    }
+
+    public void addThirds() {
+        for (int bar = 0; bar < numberOfBars; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed) {
+                progression[bar][beat][3][0] = chordProgression[bar].getNotes()[1] + additionalPitchChords;
+            }
+        }
+    }
+
+    public void addRoots() {
+        for (int bar = 0; bar < numberOfBars; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat += beatsInBar / timesChordPlayed) {
+                progression[bar][beat][3][0] = chordProgression[bar].getNotes()[0] + additionalPitchChords;
+            }
+        }
+    }
+
     public void removeDrums() {
         for (int bar = 0; bar < numberOfBars; bar++) {
-            for (int beat = 0; beat < beatsInBar; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat++) {
                 progression[bar][beat][numberOfChannels - 1][0] = 0;
             }
         }
@@ -513,7 +563,7 @@ public class Progression {
 
     public void removeHats() {
         for (int bar = 0; bar < numberOfBars; bar++) {
-            for (int beat = 0; beat < beatsInBar; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat++) {
                 progression[bar][beat][numberOfChannels - 1][1] = 0;
             }
         }
@@ -521,7 +571,7 @@ public class Progression {
 
     public void removeBass() {
         for (int bar = 0; bar < numberOfBars; bar++) {
-            for (int beat = 0; beat < beatsInBar; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat++) {
                 progression[bar][beat][3][1] = 0;
             }
         }
@@ -564,13 +614,114 @@ public class Progression {
             if (!hasBass) {
                 r++;
             }
-            removeBass();
+            else {
+                removeBass();
+            }
         }
         else if (r == 3) {
             removeChords();
         }
         else if (r == 4) {
             stripDownChords();
+        }
+        return this;
+    }
+
+    public boolean getHasExtras() {
+        return hasExtras;
+    }
+
+    public Progression mutateProgression() {
+        int r = rand.nextInt(4);
+        if (r == 0) {
+            if (hasChords) {
+                removeChords();
+            }
+            chooseTimesChordPlayed();
+            addChords();
+        }
+        else if (r == 1) {
+            if (hasBass) {
+                removeBass();
+            }
+            chooseBassSpeed();
+            addBass();
+        }
+        else if (r == 2) {
+            removeDrums();
+            if (hasHats) {
+                hasHats = false;
+                removeHats();
+            }
+            else {
+                hasHats = true;
+            }
+            addDrums();
+        }
+        else if (r == 3) {
+            if (hasDrums) {
+                removeDrums();
+            }
+            chooseDrumSpeed();
+            addDrums();
+        }
+        return this;
+    }
+
+
+    public Progression buildUp() {
+        int r = rand.nextInt(6);
+        if (r == 0) {
+            if (!hasDrums) {
+                hasDrums = true;
+                if (rand.nextInt(2) == 0) {
+                    hasHats = true;
+                }
+                addDrums();
+            }
+            else {
+                r++;
+            }
+        }
+        else if (r == 2) {
+            if (!hasBass) {
+                addBass();
+            }
+            else {
+                r++;
+            }
+        }
+        else if (r == 3) {
+            if (numberOfChannels > 4) {
+                if (!hasExtras) {
+                    addFifths();
+                    hasExtras = true;
+                }
+                else r++;
+            }
+        }
+        else if (r == 4) {
+            if (numberOfChannels > 4) {
+                if (!hasExtras) {
+                    addRoots();
+                    hasExtras = true;
+                }
+                else r++;
+            }
+        }
+        else if (r == 5) {
+            if (numberOfChannels > 4) {
+                if (hasExtras) {
+                    addThirds();
+                    hasExtras = true;
+                }
+
+            }
+        }
+        if (hasChords == false) {
+            if (rand.nextInt(3) > 0) {
+                generateChords();
+            }
         }
         return this;
     }
