@@ -153,10 +153,23 @@ public class MIDIMaker {
             data.writeInt(16732419);
 //            data.writeInt(400000);
 //            tempo = 400000;
-            int hexTempo = intToHex(100000 * 60/tempo);
-            data.writeByte(Integer.parseInt(Integer.toString(hexTempo).substring(0, 2)));
-            data.writeByte(Integer.parseInt(Integer.toString(hexTempo).substring(2, 4)));
-            data.writeByte(Integer.parseInt(Integer.toString(hexTempo).substring(4, 6)));
+            String hexTempo = Integer.toHexString(100000/ tempo * tpq);
+            StringBuilder sb = new StringBuilder(hexTempo);
+            while (hexTempo.length() < 6) {
+                sb.insert(0, "0");
+                hexTempo = sb.toString();
+            }
+//            data.writeInt(Integer.parseInt(hexTempo));
+            Log.d("hextempo", ""+sb.toString());
+            int i = Integer.parseInt(hexTempo.substring(0, 2), 16);
+            Log.d("First byte", ""+i);
+            data.writeByte(i);
+            i = Integer.parseInt(hexTempo.substring(2, 4), 16);
+            Log.d("Second byte", ""+i);
+            data.writeByte(i);
+            i = Integer.parseInt(hexTempo.substring(4, 6), 16);
+            Log.d("Third byte", ""+i);
+            data.writeByte(i);
 //            data.writeByte(6);
 //            data.writeByte(26);
 //            data.write(128);
@@ -169,11 +182,6 @@ public class MIDIMaker {
             e.printStackTrace();
         }
     }
-
-    public int intToHex(int theInt) {
-        return Integer.valueOf(String.valueOf(theInt), 16);
-    }
-
 
     void play(int pitch, double duration, Track track) {
         int durat;

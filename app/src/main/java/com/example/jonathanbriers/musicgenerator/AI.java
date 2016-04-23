@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -23,7 +24,7 @@ public class AI {
     int bestTempo;
     int top = 10;
     int bestMelodySpeed;
-    ArrayList<int[][]> melodies;
+    ArrayList<Progression> melodiesProgressions;
 
 
     public AI(SharedPreferences mPrefs) {
@@ -58,30 +59,81 @@ public class AI {
         }
     }
 
-    ArrayList<int[]> nextBestMelodies = new ArrayList<>();
-    public void createBestMelody() {
+    ArrayList<Progression> melodiesProgressionsUnpatterned = new ArrayList<>();
+    public void createBestMelody(int bestMelodySpeed, boolean shouldBePatterned) {
         //Get melodies
         for (int i = 0; i < top; i++) {
             Song song = songs.get(i);
             for (int j = 0; j < song.getNumberOfProgressions(); j++) {
                 Progression p = song.getProgressions().get(j);
-                //Gets melodies with bestMelodySpeed
-                //Includes mutations - maybe only get original patterns? And then ifMutated?
-                if (p.getMelodySpeed() == bestMelodySpeed) {
-                    melodies.add(songs.get(i).getProgressions().get(j).getMelody());
+                if (shouldBePatterned) {
+                    if (p.getIsPatternMelody()) {
+                        if (p.getMelodySpeed() == bestMelodySpeed) {
+                            melodiesProgressions.add(p);
+                        }
+                        //If the melody speed isn't best, make it best!
+                        else {
+                            p.removeMelody();
+                            p.setMelodySpeed(bestMelodySpeed);
+                            p.generateMelody();
+                            melodiesProgressions.add(p);
+                        }
+                    }
                 }
-            }
-            for (int j = 0; j < song.getNumberOfProgressions(); j++) {
-                Progression p = song.getProgressions().get(j);
-                if (p.getMelodySpeed() == nextBestMelodySpeed) {
-                    melodies.add(songs.get(i).getProgressions().get(j + melodies.size()).getMelody());
+                else {
+                    if (!p.getIsPatternMelody()) {
+                        if (p.getMelodySpeed() == bestMelodySpeed) {
+                            melodiesProgressionsUnpatterned.add(p);
+                        }
+                    }
                 }
+
             }
         }
-        for (int i = 0; i < melodies.size(); i++) {
-            //Create best melody
+        //Create best unpatterned melody
+        ArrayList<int[][][]> allMelodyDetailsUnpatterned = new ArrayList<>();
+        for (int i = 0; i < melodiesProgressionsUnpatterned.size(); i++) {
+            //Get chords, respective to key
+            Progression p = melodiesProgressionsUnpatterned.get(i);
+            Chord[] chords = new Chord[4];
+            for (int j = 0; j < chords.length; j++) {
+                chords[j] = p.getChordProgression()[j];
+            }
+            //0 = rest, 1 = arpeggio, 2 = rest of scale
+            int[][] melodyNoteTypes = new int[p.getNumberOfBars()][p.getBeatsInBar()];
+            int[][] melodyNoteIntervalsChord = new int[p.getNumberOfBars()][p.getBeatsInBar()];
+            int[][] melodyNoteIntervalsScale = new int[p.getNumberOfBars()][p.getBeatsInBar()];
+            for (int bar = 0; bar < p.getNumberOfBars(); bar++) {
+                for (int beat = 0; beat < p.getBeatsInBar(); beat++) {
+                    int note = melodiesProgressionsUnpatterned.get(i).getMelody()[bar][beat];
+                    if (note == 0) { //Rest
+                        melodyNoteTypes[bar][beat] = 0;
+                        melodyNoteIntervalsChord[bar][beat] = -1;
+                        melodyNoteIntervalsScale[bar][beat] = -1;
+                    }
+                    else {
+                        for (int j = 0; j < p.getNotesInChords(); j++) {
+                            if (note == chords[bar].getNotes()[j])  {
+                                melodyNoteTypes[bar][beat] = 1;
+                                melodyNoteIntervalsChord[bar][beat] = j;
+                                melodyNoteIntervalsScale[bar][beat] = -1;
+                            }
+                            else {
+                                melodyNoteTypes[bar][beat] = 2;
+                                melodyNoteIntervalsScale[bar][beat] = j;
+                                melodyNoteIntervalsChord[bar][beat] = -1;
+                            }
+                        }
+                    }
+                }
+            }
+            int[][][] melodyNoteDetails = new int[][][]{melodyNoteTypes, melodyNoteIntervalsChord, melodyNoteIntervalsScale};
+            allMelodyDetailsUnpatterned.add(melodyNoteDetails);
         }
     }
+
+
+
 
     int bestMelodyStart = 0;
     public void getBestMelodyStart() {

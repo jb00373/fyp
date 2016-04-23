@@ -34,8 +34,15 @@ public class Song {
     boolean hasOutro;
     int rating;
     int start, end;
-    int maxTempo = 300;
-    int minTempo = 150;
+    int maxTempo = 250;
+    int minTempo = 80;
+    int[] chordInstruments = new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27
+            ,28,29,30,31,40,41,42,44,45,46, 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66
+            ,67,68,69,70,71,72,73,75,77,78,79,88,89,90,91,92,93,94,95};
+
+    int[] melodyInstruments =new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27
+            ,28,29,30,31,45,46, 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70
+            ,71,72,73,75,77,78,79,80,81,82,83,84,85,104,105,106,107,108,109,110,111,112};
 
     public ArrayList<Progression> getProgressions() {
         return progressions;
@@ -80,12 +87,7 @@ public class Song {
     }
 
 
-    int[] chordInstruments = new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,40,41,42,44,45,46,
-    48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,75,77,78,79,88,89,90,91,92,93,94,95 };
 
-    int[] melodyInstruments = new int[] {0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,45,46,
-            48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,75,77,78,79,80,81,82,83,84,85,104,105,106
-    ,107,108,109,110,111,112};
 
     public void chooseInstruments() {
         int j = numberOfChannels;
@@ -166,66 +168,66 @@ public class Song {
         }
 
         if (rand.nextInt(2) == 0) {
-            for (int i = start; i + 1 < end; i++) {
+            for (int i = start; i + 1 < end; i = i + 2) {
                 if (i > 0) {
                     if (rand.nextInt(4) > 0) {
                         if (rand.nextInt(2) == 0) {
-                            progressions.add(i, chorus.buildUp());
+                            progressions.add(chorus.buildUp());
                         }
                         else {
-                            progressions.add(i, chorus.mutateProgression());
+                            progressions.add(chorus.mutateProgression());
                         }
                     }
                     else {
-                        progressions.add(i, chorus);
+                        progressions.add(chorus);
                     }
                     if (rand.nextInt(4) > 0) {
                         if (rand.nextInt(2) == 0) {
-                            progressions.add(i + 1, verse.buildUp());
+                            progressions.add(verse.buildUp());
                         }
                         else {
-                            progressions.add(i + 1, verse.mutateProgression());
+                            progressions.add(verse.mutateProgression());
                         }
                     }
                     else {
-                        progressions.add(i + 1, verse);
+                        progressions.add(bridge);
                     }
                 }
                 else {
-                    progressions.add(i, chorus);
-                    progressions.add(i + 1, verse);
+                    progressions.add(chorus);
+                    progressions.add(verse);
                 }
             }
         }
         else {
-            for (int i = start; i + 1 < end; i++) {
+            for (int i = start; i + 1 < end; i = i + 2) {
                 if (i > 0) {
                     if (rand.nextInt(4) > 0) {
                         if (rand.nextInt(2) == 0) {
-                            progressions.add(i, verse.buildUp());
+                            progressions.add(verse.buildUp());
                         }
                         else {
-                            progressions.add(i, verse.mutateProgression());
+                            progressions.add(verse.mutateProgression());
                         }
                     }
                     else {
-                        progressions.add(i, verse);
+                        progressions.add(verse);
                     }
                     if (rand.nextInt(4) > 0) {
                         if (rand.nextInt(2) == 0) {
-                            progressions.add(i + 1, chorus.buildUp());
+                            progressions.add(chorus.buildUp());
                         }
                         else {
-                            progressions.add(i + 1, chorus.mutateProgression());
+                            progressions.add(chorus.mutateProgression());
                         }
                     }
                     else {
-                        progressions.add(i + 1, chorus);
+                        progressions.add(bridge);
                     }
                 }
                 else {
-                    progressions.add(i, verse);
-                    progressions.add(i + 1, chorus);
+                    progressions.add(verse);
+                    progressions.add(chorus);
                 }
             }
         }
@@ -236,7 +238,7 @@ public class Song {
             else {
                 outro = chorus.stripDown();
             }
-            progressions.add(numberOfProgressions - 1, outro);
+            progressions.add(outro);
         }
     }
 

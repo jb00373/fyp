@@ -9,7 +9,7 @@ import java.util.Random;
  */
 public class Progression {
     private int numberOfBars;
-    private int beatsInBar = 16;
+    private int beatsInBar = 32;
     private int timesChordPlayed;
     private int numberOfChannels;
     private int melodySpeed;
@@ -63,6 +63,8 @@ public class Progression {
         if (hasChords) {
             addChords();
         }
+        chooseMelodySpeed();
+        chooseIsPatternMelody();
         generateMelody();
         chooseHasDrums();
         if (hasDrums) {
@@ -75,7 +77,7 @@ public class Progression {
     }
 
     void chooseHasChords() {
-        if (rand.nextInt(4) > 0) {
+        if (rand.nextInt(8) > 0) {
             hasChords = true;
         }
     }
@@ -209,9 +211,7 @@ public class Progression {
     int melodyEnd = 0;
     public void generateMelody() {
         int ra = 0;
-        chooseLongNoteMode();
-        chooseMelodySpeed();
-        chooseIsPatternMelody();
+//        chooseLongNoteMode();
         chooseStartEndMelody();
         if (isPatternMelody) {
             createMelodyPattern(chooseMelodyPatternLength());
@@ -422,6 +422,18 @@ public class Progression {
                         progression[bar][beat][2][0] = chordProgression[bar].getNotes()[rand.nextInt(notesInChords)] + additionalPitchBass;
                     }
                 }
+            }
+        }
+    }
+
+    public void setMelodySpeed(int melodySpeed) {
+        this.melodySpeed = melodySpeed;
+    }
+
+    public void removeMelody() {
+        for (int bar = 0; bar < numberOfBars; bar++) {
+            for (int beat = 0; beat < beatsInBar; beat++) {
+                progression[bar][beat][1][0] = 0;
             }
         }
     }
@@ -764,9 +776,19 @@ public class Progression {
 
     public boolean getIsPatternHats() {return isPatternHats;}
 
+    public int[] getScale() {return scale;}
+
     public int[][] getMelody() {
         return  melody;
     }
+
+    public int getAdditionalPitchMelody() {
+        return additionalPitchMelody;
+    }
+
+    public Chord[] getChordProgression() {return chordProgression;}
+
+    public int getKey() {return key;}
 
 }
 
