@@ -7,6 +7,7 @@ import java.util.Random;
 /**
  * Created by Jonny on 01/04/2016.
  */
+@SuppressWarnings("RedundantIfStatement")
 public class Progression {
     private int numberOfBars;
     private int beatsInBar = 32;
@@ -44,8 +45,12 @@ public class Progression {
     private boolean isPatternHats;
     private int[] scale;
     private int key;
+    private boolean structured;
+    private int part; //0 = verse, 1 = chorus, 2 = bridge
 
-    public Progression(int numberOfBars, int numberOfChannels, Random rand, Chord[] chords, int notesInChords, int[] scale, int key) {
+
+    public Progression(int numberOfBars, int numberOfChannels, Random rand, Chord[] chords,
+                       int notesInChords, int[] scale, int key, int part, boolean structured) {
         this.numberOfBars = numberOfBars;
         this.numberOfChannels = numberOfChannels;
         this.rand = rand;
@@ -53,6 +58,11 @@ public class Progression {
         this.chords = chords;
         this.scale = scale;
         this.key = key;
+        this.structured = structured;
+        this.timesChordPlayed = timesChordPlayed;
+        if (structured) {
+            this.part = part;
+        }
         //We need both numberOfChannels and notesInChords here to distinguish between different channels and notes
         //played simultaneously in the same channel
         progression = new int[numberOfBars][beatsInBar][numberOfChannels][notesInChords];
@@ -73,6 +83,48 @@ public class Progression {
         chooseHasBass();
         if (hasBass) {
             addBass();
+        }
+    }
+
+    public Progression(int bestKey, boolean shouldHaveDrums, boolean shouldHaveBass, int bestMelodySpeed, int bestMelodyStart,
+                       int bestMelodyEnd, Chord[] bestChordProgression, int[][] bestMelody, int timesChordPlayed,
+                       boolean progShouldHaveBass, boolean progShouldHaveDrums, int numberOfChannels, int notesInChords,
+                       int bestBassSpeed, Random rand) {
+        this.numberOfBars = 4;
+        this.key = bestKey;
+        this.hasDrums = shouldHaveDrums;
+        this.melodySpeed = bestMelodySpeed;
+        this.melodyStart = bestMelodyStart;
+        this.melodyEnd = bestMelodyEnd;
+        this.chordProgression = bestChordProgression;
+        this.melody = bestMelody;
+        this.timesChordPlayed = timesChordPlayed;
+        this.hasBass = progShouldHaveBass;
+        this.hasDrums = progShouldHaveDrums;
+        this.hasDrums = false;
+        this.numberOfChannels = numberOfChannels;
+        this.notesInChords = notesInChords;
+        this.bassSpeed = bestBassSpeed;
+        this.rand = rand;
+        hasChords = true;
+        progression = new int[numberOfBars][beatsInBar][numberOfChannels][notesInChords];
+        chooseAdditionalPitch();
+        addChords();
+        addMelody();
+        addBass();
+    }
+
+    void addMelody() {
+        for (int bar = 0; bar < numberOfBars; bar++) {
+            for (int beat = melodyStart; beat < beatsInBar - melodyEnd; beat += melodySpeed) {
+                //Rest
+                if (melody[bar][beat] == 0) {
+                    progression[bar][beat][1][0] = 0;
+                }
+                else {
+                    progression[bar][beat][1][0] = melody[bar][beat] + additionalPitchMelody;
+                }
+            }
         }
     }
 
@@ -341,7 +393,7 @@ public class Progression {
                     progression[bar][beat][numberOfChannels - 1][0] = drumPattern[p];
                     p++;
                     //Crash
-                    if (beat == 0 && bar == 0 && rand.nextInt(2) == 0) {
+                    if (beat == 0 && bar == 0 && rand.nextInt(4) > 0) {
                         progression[bar][beat][numberOfChannels - 1][1] = 49;
                     }
                     //Fill
@@ -382,7 +434,7 @@ public class Progression {
                 for (int bar = 0; bar < numberOfBars; bar++) {
                     for (int beat = 0; beat < beatsInBar; beat += hatSpeed) {
                         //Crash
-                        if (bar == 0 && beat == 0 && rand.nextInt(2) == 0) {
+                        if (bar == 0 && beat == 0 && rand.nextInt(4) > 0) {
                             progression[bar][beat][numberOfChannels - 1][1] = 49;
                         }
                         if (rand.nextInt(5) == 0) {
@@ -789,6 +841,10 @@ public class Progression {
     public Chord[] getChordProgression() {return chordProgression;}
 
     public int getKey() {return key;}
+
+    public int getPart() {return part;}
+
+    public boolean getStructured() {return structured;}
 
 }
 

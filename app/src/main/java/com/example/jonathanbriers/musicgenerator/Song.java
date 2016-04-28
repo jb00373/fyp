@@ -18,24 +18,24 @@ public class Song {
     private boolean mixolydian;
     private boolean hasDrums;
     private Random rand;
-    Chord I, II, III, IV, V, VI, VII;
-    int root;
-    Chord[] chords;
-    int[] scale;
-    int notesInChords;
-    int numberOfChannels;
-    int numberOfBars;
-    Track[] tracks;
-    int maxProgressions = 10;
-    int minProgressions = 3;
-    Progression intro, verse, chorus, bridge, outro;
-    boolean structured;
-    boolean hasIntro;
-    boolean hasOutro;
-    int rating;
-    int start, end;
-    int maxTempo = 250;
-    int minTempo = 80;
+    private Chord I, II, III, IV, V, VI, VII;
+    private int root;
+    private Chord[] chords;
+    private int[] scale;
+    private int notesInChords;
+    private int numberOfChannels;
+    private int numberOfBars;
+    private Track[] tracks;
+    private int maxProgressions = 10;
+    private int minProgressions = 3;
+    private Progression intro, verse, chorus, bridge, outro;
+    private boolean structured;
+    private boolean hasIntro;
+    private boolean hasOutro;
+    private int rating;
+    private int start, end;
+    private int maxTempo = 250;
+    private int minTempo = 80;
     int[] chordInstruments = new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27
             ,28,29,30,31,40,41,42,44,45,46, 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66
             ,67,68,69,70,71,72,73,75,77,78,79,88,89,90,91,92,93,94,95};
@@ -69,6 +69,31 @@ public class Song {
         Log.d("Done", "done");
     }
 
+    public Song(int bestKey, int bestTempo, int bestBassInstrument, int bestChordInstrument,
+                int bestMelodyInstrument, int[] scale, boolean shouldHaveDrums, Random rand,
+                boolean dorian, boolean mixolydian, boolean shouldBeStructured) {
+        progressions = new ArrayList<>();
+        createChords();
+        this.rand = rand;
+        this.key = bestKey;
+        Log.d("Key:", ""+numberToNote(key));
+        this.tempo = bestTempo;
+        this.scale = scale;
+        this.hasDrums = shouldHaveDrums;
+        this.hasDrums = false;
+        this.dorian = dorian;
+        this.mixolydian = mixolydian;
+        this.structured = shouldBeStructured;
+        updateNotesInChords();
+        chooseNumberOfChannels();
+        tracks[2].setInstrument(bestBassInstrument);
+        tracks[1].setInstrument(bestMelodyInstrument);
+        tracks[0].setInstrument(bestChordInstrument);
+    }
+
+//    bestKey, bestTempo, bestBassInstrument, bestChordInstrument, bestMelodyInstrument, bestScale,
+//    shouldBeMixolydian, shouldBeDorian, shouldHaveDrums
+
     public void chooseNumberOfProgressions() {
         numberOfProgressions = rand.nextInt(maxProgressions - minProgressions) + minProgressions;
     }
@@ -78,15 +103,8 @@ public class Song {
     }
 
     public void chooseHasDrums() {
-        if (numberOfChannels > 2 && rand.nextInt(3) > 0) {
-            hasDrums = true;
-        }
-        else {
-            hasDrums = false;
-        }
+        hasDrums = numberOfChannels > 2 && rand.nextInt(3) > 0;
     }
-
-
 
 
     public void chooseInstruments() {
@@ -124,28 +142,29 @@ public class Song {
     void generateProgressions() {
         if (!structured) {
             for (int i = 0; i < numberOfProgressions; i++) {
-                Progression p = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
+                Progression p = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key, 0, false);
                 progressions.add(i, p);
             }
         }
         else {
-            chooseStructure();
+            chooseStructure(false);
         }
+    }
+
+    void addProgression(Progression p) {
+        progressions.add(p);
     }
 
     public void chooseStructured() {
-        if (rand.nextInt(3) == 0) {
-            structured = false;
-        }
-        else {
-            structured = true;
-        }
+        structured = rand.nextInt(3) != 0;
     }
 
-    void chooseStructure() {
-        verse = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
-        chorus = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
-        bridge = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key);
+    void chooseStructure(boolean ai) {
+        if (!ai) {
+            verse = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key, 0, true);
+            chorus = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key, 1, true);
+            bridge = new Progression(numberOfBars, numberOfChannels, rand, chords, notesInChords, scale, key, 2, true);
+        }
         chooseHasIntro();
         chooseHasOutro();
         Progression originalVerse;
@@ -240,6 +259,9 @@ public class Song {
             }
             progressions.add(outro);
         }
+        numberOfProgressions = progressions.size();
+        Log.d("Number of progs", ""+numberOfProgressions);
+        Log.d("Real number of progs", ""+progressions.size());
     }
 
 
@@ -354,7 +376,22 @@ public class Song {
         }
     }
 
+    void updateNotesInChords() {
+        if (dorian || mixolydian) {
+            notesInChords = 4;
+        }
+        else {
+            notesInChords = 3;
+        }
+    }
+
     void createScale() {
+        if (key == 0) {
+            root = key + 12;
+        }
+        else {
+            root = key;
+        }
         if (dorian) {
             scale = new int[]
                     {root, root + 2, root + 5, root + 7, root + 9, root + 11};
@@ -366,10 +403,21 @@ public class Song {
         else {
             scale = new int[]
                     {root, root + 2, root + 4, root + 5, root + 7, root + 9, root + 11};
+            if (root == 6) {
+                for (int i = 0; i < scale.length; i++) {
+                    Log.d("scale[" + i + "]:", "" + numberToNote(scale[i]));
+                }
+            }
         }
     }
 
     void createChords() {
+        if (key == 0) {
+            root = key + 12;
+        }
+        else {
+            root = key;
+        }
         if (dorian) {
             I = new Chord (root, new int[]{root, root + 4, root + 7, root + 11}, numberToNote(root) + " Major 7th");
             root = root + 2;
@@ -497,4 +545,34 @@ public class Song {
         }
         return null;
     }
+
+    public int[] getChordInstruments() {
+        return chordInstruments;
+    }
+
+    public int[] getMelodyInstruments() {
+        return melodyInstruments;
+    }
+
+    public int getChordInstrument() {
+        return tracks[0].getInstrument();
+    }
+
+    public int getMelodyInstrument() {
+        return tracks[1].getInstrument();
+    }
+
+    public int getBassInstrument() {
+        return tracks[2].getInstrument();
+    }
+
+    public int getNotesInChords() {return notesInChords;}
+
+    public boolean getStructured() {return structured;}
+
+    public void setVerse(Progression verse) {this.verse = verse;}
+
+    public void setChorus(Progression chorus) {this.chorus = chorus;}
+
+    public void setBridge(Progression bridge) {this.bridge = bridge;}
 }

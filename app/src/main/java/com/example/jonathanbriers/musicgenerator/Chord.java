@@ -17,6 +17,11 @@ public class Chord {
         this.name = name;
     }
 
+    public Chord(int root, int[] notes) {
+        this.root = root;
+        this.notes = notes;
+    }
+
     public String getName() {
         return name;
     }
@@ -31,8 +36,8 @@ public class Chord {
         }
     }
 
-    public void clashNote() {
-
+    public int getRoot() {
+        return root;
     }
 
     String numberToNote(int note) {

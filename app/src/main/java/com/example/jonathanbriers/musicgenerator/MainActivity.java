@@ -1,5 +1,6 @@
 package com.example.jonathanbriers.musicgenerator;
 
+import android.app.Application;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -9,7 +10,9 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.DisplayMetrics;
@@ -46,16 +49,14 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
 
     Generator generator;
 
-    float maxVolume, curVolume, leftVolume, rightVolume, normalVolume;
-    int priority,  no_loop;
     EditText txtSeed;
     Button btnGenerate;
     Button btnSeed;
     Button btnExport;
-    Button btnAdvanced;
     Button btnSave;
     Button btnLoad;
     Button btnRate;
+    Button btnGenSmart;
     CheckBox cbxInfite;
     RatingBar ratingBar;
     Integer initialSeed;
@@ -71,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
     private Intent playIntent;
     //binding
     private boolean musicBound=false;
+    private boolean hasGenerated;
     private AudioController ac;
 
     @Override
@@ -93,8 +95,10 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         filename = "/storage/emulated/0/MusicGenerator/music.midi";
         mediaPlayer = new MediaPlayer();
 
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+
         prepareSeed();
-        newSong();
+        newSong(false);
 
         ratingBar = new RatingBar(this);
         ratingBar = (RatingBar)findViewById(R.id.ratingBar);
@@ -104,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         btnGenerate.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                newSong();
+                newSong(false);
 //                ac.show();
             }
         });
@@ -127,15 +131,6 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             }
         });
 
-        btnAdvanced = new Button(this);
-        btnAdvanced = (Button)findViewById(R.id.btnAdvanced);
-        btnAdvanced.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-//                Intent intent = new Intent(v.getContext(), AudioPlayer.class);
-//                startActivity(intent);
-            }
-        });
 
         btnSave = new Button(this);
         btnSave = (Button)findViewById(R.id.btnSave);
@@ -170,6 +165,17 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         cbxInfite = new CheckBox((this));
         cbxInfite = (CheckBox)findViewById(R.id.cbxInfinite);
 
+        btnGenSmart = new Button(this);
+        btnGenSmart = (Button)findViewById(R.id.btnGenSmart);
+        btnGenSmart.setOnClickListener(new View.OnClickListener(){
+            Handler handler = new Handler();
+
+            @Override
+            public void onClick(View v) {
+                newSong(true);
+            }
+        });
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -193,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             public void onCompletion(MediaPlayer mp) {
                 if (cbxInfite.isChecked()) {
                     prepareSeed();
-                    newSong();
+                    newSong(false);
                     audioPlayer.go();
                 }
             }
@@ -267,7 +273,8 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         return mainSeed;
     }
 
-    void newSong() {
+    boolean isSmart;
+    void newSong(boolean smart) {
         try {
             mediaPlayer.stop();
             mediaPlayer.reset();
@@ -288,10 +295,23 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             FileOutputStream fo = new FileOutputStream(filename);
             data = new DataOutputStream(fo);
             MIDIMaker m = new MIDIMaker(data, filename);
-            generator = new Generator(m, getApplicationContext());
+            if (!hasGenerated) {
+                generator = new Generator(m, mPrefs);
+                hasGenerated = true;
+            }
+            else {
+                generator.setMidi(m);
+            }
 
-            generator.setSeed(getSeedFromTxt());
-            generator.newSong();
+            if (smart) {
+                generator.genSmart();
+                isSmart = true;
+            }
+            else {
+                generator.setSeed(getSeedFromTxt());
+                generator.newSong();
+                isSmart = false;
+            }
             mediaPlayer.reset();
             fi = new FileInputStream(filename);
             try {
@@ -313,9 +333,14 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             FileOutputStream fo = new FileOutputStream(title);
             data = new DataOutputStream(fo);
             MIDIMaker m = new MIDIMaker(data, title);
-            generator = new Generator(m, getApplicationContext());
-            generator.setSeed(getSeedFromTxt());
-            generator.newSong();
+            generator = new Generator(m, mPrefs);
+            if (isSmart) {
+                generator.genSmart();
+            }
+            else {
+                generator.setSeed(getSeedFromTxt());
+                generator.newSong();
+            }
             Context context = getApplicationContext();
             CharSequence text = "Exported as MIDI file in: " + title;
             int duration = Toast.LENGTH_SHORT;
@@ -371,14 +396,16 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
 
     public void rate() {
         generator.getSong().setRating((int)(ratingBar.getRating() * 2));
-        mPrefs = getPreferences(MODE_PRIVATE);
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         int howMany = mPrefs.getAll().size();
         SharedPreferences.Editor prefsEditor = mPrefs.edit();
         Gson gson = new Gson();
         String json = gson.toJson(generator.getSong());
         prefsEditor.putString(((Integer)(howMany)).toString(), json);
-        prefsEditor.commit();
+        prefsEditor.apply();
         ratingBar.setRating(0.0f);
+        Log.d("mPrefs size =", ""+howMany);
+        generator.getAi().setmPrefs(mPrefs);
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -386,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
         if (requestCode == 1) {
             if(resultCode == RESULT_OK){
                 txtSeed.setText(data.getStringExtra("Title"));
-                newSong();
+                newSong(false);
             }
         }
     }
@@ -407,7 +434,14 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+//            Bundle b = new Bundle();
+//            Gson gson = new Gson();
+//            String json = gson.toJson(getApplicationContext());
+//            b.putString("applicationContext", json);
+            Intent i = new Intent(this, SettingsActivity.class);
+//            i.putExtras(b);
+            startActivity(i);
+
         }
 
         return super.onOptionsItemSelected(item);

@@ -1,6 +1,7 @@
 package com.example.jonathanbriers.musicgenerator;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
@@ -22,13 +23,13 @@ public class Generator {
     Song theSong;
     AI ai;
 
-    public Generator(MIDIMaker m, Context context) {
+    public Generator(MIDIMaker m, SharedPreferences mPrefs) {
         rand = new Random(seed);
         midi = m;
-        ai = new AI(PreferenceManager.getDefaultSharedPreferences(context));
+        ai = new AI(mPrefs, rand);
     }
 
-    void arrayToMIDI() {
+    public void arrayToMIDI() {
         for (Progression p:theSong.getProgressions()) {
             int[][][][] pm = p.getProgression();
             //Chords/Channel0
@@ -191,6 +192,14 @@ public class Generator {
         midi.gen(theSong.getHasDrums());
     }
 
+    public void genSmart() {
+        chooseTpq();
+        theSong = ai.smartGenerate();
+        midi.setTempo(theSong.getTempo());
+        midi.setTracks(theSong.getTracks());
+        arrayToMIDI();
+        midi.gen(theSong.getHasDrums());
+    }
 
     public int getTpq() {
         return tpq;
@@ -253,6 +262,14 @@ public class Generator {
     public void setSeed(long seed) {
         this.seed = seed;
         rand = new Random(seed);
+    }
+
+    public AI getAi () {
+        return ai;
+    }
+
+    public void setMidi(MIDIMaker m) {
+        this.midi = m;
     }
 
 }

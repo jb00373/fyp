@@ -62,6 +62,7 @@ public class MIDIMaker {
 
     public void setTempo(int tempo) {
         this.tempo = tempo;
+        Log.d("Tempo", ""+tempo);
     }
 
     public Track getTrack(int i) {
