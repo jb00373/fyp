@@ -78,21 +78,22 @@ public class Progression {
         generateMelody();
         chooseHasDrums();
         if (hasDrums) {
-            addDrums();
+            chooseDrumSpeed();
+            createDrumPattern(chooseDrumPatternLength());
+            addDrums(false);
         }
         chooseHasBass();
         if (hasBass) {
-            addBass();
+            addBass(false);
         }
     }
 
-    public Progression(int bestKey, boolean shouldHaveDrums, boolean shouldHaveBass, int bestMelodySpeed, int bestMelodyStart,
+    public Progression(int bestKey, int bestMelodySpeed, int bestMelodyStart,
                        int bestMelodyEnd, Chord[] bestChordProgression, int[][] bestMelody, int timesChordPlayed,
                        boolean progShouldHaveBass, boolean progShouldHaveDrums, int numberOfChannels, int notesInChords,
-                       int bestBassSpeed, Random rand) {
+                       int bestBassSpeed, int[] bestDrumPattern, int drumPatternLength, int bestDrumSpeed, Random rand) {
         this.numberOfBars = 4;
         this.key = bestKey;
-        this.hasDrums = shouldHaveDrums;
         this.melodySpeed = bestMelodySpeed;
         this.melodyStart = bestMelodyStart;
         this.melodyEnd = bestMelodyEnd;
@@ -101,7 +102,6 @@ public class Progression {
         this.timesChordPlayed = timesChordPlayed;
         this.hasBass = progShouldHaveBass;
         this.hasDrums = progShouldHaveDrums;
-        this.hasDrums = false;
         this.numberOfChannels = numberOfChannels;
         this.notesInChords = notesInChords;
         this.bassSpeed = bestBassSpeed;
@@ -111,14 +111,22 @@ public class Progression {
         chooseAdditionalPitch();
         addChords();
         addMelody();
-        addBass();
+        if (hasBass) {
+            addBass(true);
+        }
+        if (hasDrums) {
+            this.drumPattern = new int[drumPatternLength];
+            this.drumPattern = bestDrumPattern;
+            this.drumSpeed = bestDrumSpeed;
+            addDrums(true);
+        }
     }
 
     void addMelody() {
         for (int bar = 0; bar < numberOfBars; bar++) {
             for (int beat = melodyStart; beat < beatsInBar - melodyEnd; beat += melodySpeed) {
                 //Rest
-                if (melody[bar][beat] == 0) {
+                if (melody[bar][beat] < 0) {
                     progression[bar][beat][1][0] = 0;
                 }
                 else {
@@ -369,12 +377,9 @@ public class Progression {
         return fillLengths[rand.nextInt(fillLengths.length)];
     }
 
-    public void addDrums() {
+    public void addDrums(boolean smart) {
         int r = 0;
-//        chooseHasDrums();
         if (hasDrums) {
-            chooseDrumSpeed();
-            createDrumPattern(chooseDrumPatternLength());
             int fillLength = getFillLength();
             int p = 0;
             for (int bar = 0; bar < numberOfBars; bar++) {
@@ -460,11 +465,13 @@ public class Progression {
     }
 
     int additionalPitchBass = 24;
-    public void addBass() {
+    public void addBass(boolean smart) {
 //        chooseHasBass();
         if (hasBass) {
-            chooseBassSpeed();
-            chooseStartEndBass();
+            if (!smart) {
+                chooseBassSpeed();
+                chooseStartEndBass();
+            }
             for (int bar = 0; bar < numberOfBars; bar++) {
                 for (int beat = bassStart; beat < beatsInBar - bassEnd; beat+= bassSpeed) {
                     if (rand.nextInt(5) != 0) {
@@ -709,7 +716,7 @@ public class Progression {
                 removeBass();
             }
             chooseBassSpeed();
-            addBass();
+            addBass(false);
         }
         else if (r == 2) {
             removeDrums();
@@ -720,14 +727,14 @@ public class Progression {
             else {
                 hasHats = true;
             }
-            addDrums();
+            addDrums(false);
         }
         else if (r == 3) {
             if (hasDrums) {
                 removeDrums();
             }
             chooseDrumSpeed();
-            addDrums();
+            addDrums(false);
         }
         return this;
     }
@@ -741,7 +748,9 @@ public class Progression {
                 if (rand.nextInt(2) == 0) {
                     hasHats = true;
                 }
-                addDrums();
+                chooseDrumSpeed();
+                createDrumPattern(chooseDrumPatternLength());
+                addDrums(false);
             }
             else {
                 r++;
@@ -749,7 +758,7 @@ public class Progression {
         }
         else if (r == 2) {
             if (!hasBass) {
-                addBass();
+                addBass(false);
             }
             else {
                 r++;
@@ -845,6 +854,10 @@ public class Progression {
     public int getPart() {return part;}
 
     public boolean getStructured() {return structured;}
+
+    public int[] getDrumPattern() {return drumPattern;}
+
+    public void setDrumSpeed(int drumSpeed) {this.drumSpeed = drumSpeed;}
 
 }
 

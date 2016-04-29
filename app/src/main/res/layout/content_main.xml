@@ -12,7 +12,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:weightSum="1">
 
         <TextView android:text="Seed:" android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -121,7 +122,7 @@
         <LinearLayout
             android:orientation="horizontal"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_below="@+id/ratingBar"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
@@ -131,19 +132,29 @@
             <Button
                 style="?android:attr/buttonStyleSmall"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Advanced"
-                android:id="@+id/btnAdvanced"
+                android:layout_height="match_parent"
+                android:text="Generate from \npreferences"
+                android:id="@+id/btnGenSmart"
                 android:layout_weight="0.5" />
 
             <Button
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:text="Rate"
                 android:id="@+id/btnRate"
                 android:layout_weight="0.5" />
 
         </LinearLayout>
+
+        <CheckBox
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/linearLayout"
+            android:text="Infinity Mode"
+            android:id="@+id/cbxInfinite"
+            android:layout_gravity="center_vertical"
+            android:textSize="18sp" />
+
     </LinearLayout>
 
 

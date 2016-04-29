@@ -192,13 +192,19 @@ public class Generator {
         midi.gen(theSong.getHasDrums());
     }
 
-    public void genSmart() {
+    public boolean genSmart() {
         chooseTpq();
         theSong = ai.smartGenerate();
-        midi.setTempo(theSong.getTempo());
-        midi.setTracks(theSong.getTracks());
-        arrayToMIDI();
-        midi.gen(theSong.getHasDrums());
+        if (theSong == null) {
+            return false;
+        }
+        else {
+            midi.setTempo(theSong.getTempo());
+            midi.setTracks(theSong.getTracks());
+            arrayToMIDI();
+            midi.gen(theSong.getHasDrums());
+            return true;
+        }
     }
 
     public int getTpq() {

@@ -302,28 +302,38 @@ public class MainActivity extends AppCompatActivity implements android.widget.Me
             else {
                 generator.setMidi(m);
             }
-
+            boolean success;
             if (smart) {
-                generator.genSmart();
+                success = generator.genSmart();
                 isSmart = true;
+                if (!success) {
+                    Context context = getApplicationContext();
+                    CharSequence text = "You need to rate more songs first!";
+                    int duration = Toast.LENGTH_SHORT;
+                    Toast toast = Toast.makeText(context, text, duration);
+                    toast.show();
+                }
             }
             else {
                 generator.setSeed(getSeedFromTxt());
                 generator.newSong();
                 isSmart = false;
+                success = true;
             }
-            mediaPlayer.reset();
-            fi = new FileInputStream(filename);
-            try {
-                fd = fi.getFD();
-                mediaPlayer.setDataSource(fd);
-                mediaPlayer.prepare();
-            }
-            catch (IOException f) {
-                f.printStackTrace();
+            if (success) {
+                mediaPlayer.reset();
+                fi = new FileInputStream(filename);
+                try {
+                    fd = fi.getFD();
+                    mediaPlayer.setDataSource(fd);
+                    mediaPlayer.prepare();
+                } catch (IOException f) {
+                    f.printStackTrace();
+                }
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
+
         }
     }
 

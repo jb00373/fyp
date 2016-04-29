@@ -3,6 +3,7 @@ package com.example.jonathanbriers.musicgenerator;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 
@@ -29,6 +30,17 @@ public class AI  {
     int top = 10;
     int[] chordTimes = new int[]{1, 2, 4, 8};
     int[] bassSpeeds = new int[]{1, 2, 4, 8, 16};
+    int[] drumSpeeds = new int[]{2, 4, 8, 16};
+    int[] drumPatternLengths = new int[] {1, 2, 4, 8};
+
+    int[] melodyInstruments = new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27
+            ,28,29,30,31,45,46, 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70
+            ,71,72,73,75,77,78,79,80,81,82,83,84,85,104,105,106,107,108,109,110,111,112};
+    int[] chordInstruments = new int[]{0,1,2,3,4,5,6,7,8,9,11,13,16,17,18,19,20,21,22,23,24,25,26,27
+            ,28,29,30,31,40,41,42,44,45,46, 48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66
+            ,67,68,69,70,71,72,73,75,77,78,79,88,89,90,91,92,93,94,95};
+    int[] bassInstruments = new int[]{32,33,34,35,36,37,38,39};
+    int[] noteTypes = new int[]{0, 1, 2};
     int bestMelodySpeed;
     ArrayList<Progression> melodiesProgressions;
     int numberOfChordInProgression = 4;
@@ -37,10 +49,8 @@ public class AI  {
     int beatsInBar = 32;
     int[][] bestMelody = new int[numberOfChordInProgression][beatsInBar];
     boolean progShouldHaveBass;
-    ArrayList<Progression> progressions = new ArrayList<>();
-    ArrayList<Progression> progressions2 = new ArrayList<>();
-    int[][] bestRoots1 = new int[numberOfChordInProgression][scaleLength];
-    int[][] bestRoots2 = new int[numberOfChordInProgression][scaleLength];
+    int[][] bestRoots1;
+    int[][] bestRoots2;
     Chord[] bestChordProgression1 = new Chord[numberOfChordInProgression];
     Chord[] bestChordProgression2 = new Chord[numberOfChordInProgression];
     ArrayList<Progression> melodiesProgressionsUnpatterned = new ArrayList<>();
@@ -62,67 +72,91 @@ public class AI  {
 
     public Song smartGenerate() {
         getSongs();
-        bestKey();
-        bestTempo();
-        shouldBeDorian();
-        if (!shouldBeDorian) {
-            shouldBeMixolydian();
-        }
-        shouldHaveDrums();
-        bestBassSpeed();
-        bestMelodySpeed();
-        bestChordInstrument();
-        progShouldHaveBass();
-        progShouldHaveDrums();
-        bestBassInstrument();
-        bestMelodyInstrument();
-        getBestMelodyStart();
-        getBestMelodyEnd();
-        getScale();
-        bestChordProgression(bestScale);
-        bestTimesChordPlayed();
-        createBestMelody(bestMelodySpeed, false, bestChordProgression1);
-        Log.d("Succeesss??", "Suck Cess!!!!");
-        Song s = new Song(bestKey, bestTempo, bestBassInstrument, bestChordInstrument,
-                bestMelodyInstrument, bestScale, shouldHaveDrums, rand, shouldBeDorian, shouldBeMixolydian,
-                shouldBeStructured);
-        Progression p = new Progression(bestKey, progShouldHaveDrums, progShouldHaveBass,
-                bestMelodySpeed, bestMelodyStart, bestMelodyEnd, bestChordProgression1, bestMelody,
-                bestTimesChordPlayed, progShouldHaveBass, progShouldHaveDrums, s.getNumberOfChannels(),
-                s.getNotesInChords(), bestBassSpeed, rand);
-        Progression p2 = new Progression(bestKey, progShouldHaveDrums, progShouldHaveBass,
-                bestMelodySpeed, bestMelodyStart, bestMelodyEnd, bestChordProgression2, bestMelody,
-                bestTimesChordPlayed, progShouldHaveBass, progShouldHaveDrums, s.getNumberOfChannels(),
-                s.getNotesInChords(), bestBassSpeed, rand);
-        Progression p3 = new Progression(bestKey, progShouldHaveDrums, progShouldHaveBass,
-                bestMelodySpeed, bestMelodyStart, bestMelodyEnd, randomChordProgression(), bestMelody,
-                bestTimesChordPlayed, progShouldHaveBass, progShouldHaveDrums, s.getNumberOfChannels(),
-                s.getNotesInChords(), bestBassSpeed, rand);
-        if (!shouldBeStructured) {
-            s.addProgression(p);
-            s.addProgression(p2);
-            s.addProgression(p3);
+        if (numberOfSongs > 4) {
+            bestKey();
+            bestTempo();
+            shouldBeDorian();
+            if (!shouldBeDorian) {
+                shouldBeMixolydian();
+            }
+            shouldHaveDrums();
+            bestBassSpeed();
+            bestMelodySpeed();
+            bestChordInstrument();
+            progShouldHaveBass();
+            progShouldHaveDrums();
+            bestBassInstrument();
+            bestMelodyInstrument();
+            getBestMelodyStart();
+            getBestMelodyEnd();
+            getScale();
+            shouldBeStructured();
+            bestChordProgression(bestScale);
+            bestTimesChordPlayed();
+            createBestMelody(bestMelodySpeed, false, bestChordProgression1);
+            getBestDrumPatternLength();
+            getBestDrumSpeed();
+            int[] bestDrumPattern = createDrumPattern();
+
+            Log.d("Succeesss??", "Suck Cess!!!!");
+            Song s = new Song(bestKey, bestTempo, bestBassInstrument, bestChordInstrument,
+                    bestMelodyInstrument, bestScale, shouldHaveDrums, rand, shouldBeDorian, shouldBeMixolydian,
+                    shouldBeStructured);
+            Progression p = new Progression(bestKey,
+                    bestMelodySpeed, bestMelodyStart, bestMelodyEnd, bestChordProgression1, bestMelody,
+                    bestTimesChordPlayed, progShouldHaveBass, true, s.getNumberOfChannels(),
+                    s.getNotesInChords(), bestBassSpeed, bestDrumPattern, bestDrumPatternLength, bestDrumSpeed, rand);
+            createBestMelody(bestMelodySpeed, false, bestChordProgression2);
+            Progression p2 = new Progression(bestKey,
+                    bestMelodySpeed, bestMelodyStart, bestMelodyEnd, bestChordProgression2, bestMelody,
+                    bestTimesChordPlayed, progShouldHaveBass, true, s.getNumberOfChannels(),
+                    s.getNotesInChords(), bestBassSpeed, bestDrumPattern, bestDrumPatternLength, bestDrumSpeed, rand);
+            Chord[] randomChordProgression = randomChordProgression();
+            createBestMelody(bestMelodySpeed, false, randomChordProgression);
+            Progression p3 = new Progression(bestKey,
+                    bestMelodySpeed, bestMelodyStart, bestMelodyEnd, randomChordProgression, bestMelody,
+                    bestTimesChordPlayed, progShouldHaveBass, true, s.getNumberOfChannels(),
+                    s.getNotesInChords(), bestBassSpeed, bestDrumPattern, bestDrumPatternLength, bestDrumSpeed, rand);
+            if (!shouldBeStructured) {
+                s.addProgression(p);
+                s.addProgression(p2);
+                s.addProgression(p3);
+            } else {
+                s.setVerse(p);
+                s.setChorus(p2);
+                s.setBridge(p3);
+            }
+            return s;
         }
         else {
-            s.setVerse(p);
-            s.setChorus(p2);
-            s.setBridge(p3);
+            return null;
         }
-        return s;
     }
 
     public void getSongs() {
         Song song;
         Gson gson = new Gson();
         numberOfSongs = mPrefs.getAll().size();
-        for (int i = 0; i < numberOfSongs; i++) {
-            String json = mPrefs.getString(((Integer) (i)).toString(), "");
-            song = gson.fromJson(json, Song.class);
-            songs.add(song);
+        if (songs.size() == 0) {
+            for (int i = 0; i < numberOfSongs; i++) {
+                String json = mPrefs.getString(((Integer) (i)).toString(), "");
+                song = gson.fromJson(json, Song.class);
+                songs.add(song);
+            }
         }
-        if (numberOfSongs < top) {
+        else if (songs.size() != numberOfSongs) {
+            for (int i = songs.size(); i < numberOfSongs; i++) {
+                String json = mPrefs.getString(((Integer) (i)).toString(), "");
+                song = gson.fromJson(json, Song.class);
+                songs.add(song);
+            }
+        }
+        if (numberOfSongs < 20) {
             top = numberOfSongs;
             Log.d("Number of songs:", "" + top);
+        }
+        else {
+            top = 20;
         }
         sortSongs();
     }
@@ -140,8 +174,10 @@ public class AI  {
     }
 
     public void bestChordProgression(int[] bestScale) {
+        bestRoots1 = new int[numberOfChordInProgression][scaleLength];
         for (int i = 0; i < top; i += 2) {
             Song song = songs.get(i);
+            ArrayList<Progression> progressions = new ArrayList<>();
             for (int j = 0; j < song.getNumberOfProgressions(); j++) {
                 Progression p = song.getProgressions().get(j);
                 progressions.add(p);
@@ -160,8 +196,10 @@ public class AI  {
                 }
             }
         }
+        bestRoots2 = new int[numberOfChordInProgression][scaleLength];
         for (int i = 1; i < top; i += 2) {
             Song song = songs.get(i);
+            ArrayList<Progression> progressions2 = new ArrayList<>();
             for (int j = 0; j < song.getNumberOfProgressions(); j++) {
                 Progression p = song.getProgressions().get(j);
                 progressions2.add(p);
@@ -186,8 +224,8 @@ public class AI  {
             int biggest = 0;
             int theRoot = 0;
             for (int k = 0; k < scaleLength; k++) {
-                if (bestRoots1[chord][k] > biggest) {
-                    biggest = bestRoots1[chord][k];
+                if (bestRoots1[chord][k] > bestRoots1[chord][biggest]) {
+                    biggest = k;
                     theRoot = bestScale[k];
                 }
             }
@@ -197,8 +235,8 @@ public class AI  {
             int biggest = 0;
             int theRoot = 0;
             for (int k = 0; k < scaleLength; k++) {
-                if (bestRoots2[chord][k] > biggest) {
-                    biggest = bestRoots2[chord][k];
+                if (bestRoots2[chord][k] > bestRoots2[chord][biggest]) {
+                    biggest = k;
                     theRoot = bestScale[k];
                 }
             }
@@ -221,7 +259,7 @@ public class AI  {
             for (int j = 0; j < song.getNumberOfProgressions(); j++) {
                 Progression p = song.getProgressions().get(j);
                 if (shouldBePatterned) {
-                    if (p.getIsPatternMelody()) {
+//                    if (p.getIsPatternMelody()) {
                         if (p.getMelodySpeed() == bestMelodySpeed) {
                             melodiesProgressions.add(p);
                         }
@@ -232,13 +270,13 @@ public class AI  {
                             p.generateMelody();
                             melodiesProgressions.add(p);
                         }
-                    }
+//                    }
                 } else {
-                    if (!p.getIsPatternMelody()) {
+//                    if (!p.getIsPatternMelody()) {
                         if (p.getMelodySpeed() == bestMelodySpeed) {
                             melodiesProgressionsUnpatterned.add(p);
                         }
-                    }
+//                    }
                 }
             }
         }
@@ -295,14 +333,21 @@ public class AI  {
             }
 
             for (int bar = 0; bar < 4; bar++) {
-                int bestType = 0;
-                for (int beat = 0; beat < 32; beat++) { //beat += melodySpeed???
+                for (int beat = 0; beat < 32; beat += bestMelodySpeed) { //beat += melodySpeed???
+                    int[] bestTypes = new int[3];
+                    int bestType = 0;
                     for (int[][][] melodyNoteDetails : allMelodyDetailsUnpatterned) {
-                        bestType += melodyNoteDetails[0][bar][beat];
+                        bestTypes[melodyNoteDetails[0][bar][beat]]++;
                     }
-                    bestType = bestType / melodiesProgressionsUnpatterned.size();
+                    int biggest = 0;
+                    for (int a = 0; a < bestTypes.length; a++) {
+                        if (bestTypes[a] > bestTypes[biggest]) {
+                            biggest = a;
+                        }
+                    }
+                    bestType = biggest;
                     if (bestType == 0) { //Rest
-                        bestMelody[bar][beat] = 0;
+                        bestMelody[bar][beat] = -1;
                     }
                     else if (bestType == 1) { //Chord note
                         //Int array with length = numberOfNotesInChord
@@ -314,9 +359,9 @@ public class AI  {
                                 }
                             }
                         }
-                        int biggest = 0;
+                        biggest = 0;
                         for (int i = 0; i < bestChordIntervals.length; i++) {
-                            if (bestChordIntervals[i] > biggest) {
+                            if (bestChordIntervals[i] > bestChordIntervals[biggest]) {
                                 biggest = i;
                             }
                         }
@@ -326,14 +371,14 @@ public class AI  {
                         int[] bestScaleNotes = new int[bestScale.length];
                         for (int[][][] melodyNoteDetails : allMelodyDetailsUnpatterned) {
                             for (int i = 0; i < bestScaleNotes.length; i++) {
-                                if (melodyNoteDetails[1][bar][beat] == bestScaleNotes[i]) {
+                                if (melodyNoteDetails[2][bar][beat] == bestScaleNotes[i]) {
                                     bestScaleNotes[i]++;
                                 }
                             }
                         }
-                        int biggest = 0;
+                        biggest = 0;
                         for (int i = 0; i < bestScaleNotes.length; i++) {
-                            if (bestScaleNotes[i] > biggest) {
+                            if (bestScaleNotes[i] > bestScaleNotes[biggest]) {
                                 biggest = i;
                             }
                         }
@@ -342,6 +387,92 @@ public class AI  {
                 }
             }
         }
+    }
+
+    int[] drumSounds = new int[] {36, 37, 38, 41, 43};
+    public int[] createDrumPattern() {
+        ArrayList<int[]> drumPatterns = new ArrayList<>();
+        for (int i = 0; i < top; i++) {
+            Song song = songs.get(i);
+            for (int j = 0; j < song.getNumberOfProgressions(); j++) {
+                Progression p = song.getProgressions().get(j);
+                if (p.getHasDrums()) {
+                    if (p.getDrumPattern().length == bestDrumPatternLength) {
+                        if (p.getDrumSpeed() == bestDrumSpeed) {
+                            drumPatterns.add(p.getDrumPattern());
+                        } else {
+                            p.removeDrums();
+                            p.setDrumSpeed(bestDrumSpeed);
+                            p.addDrums(false);
+                            drumPatterns.add(p.getDrumPattern());
+                        }
+                    }
+                }
+            }
+        }
+        int[][] bestDrumSounds = new int[bestDrumPatternLength][drumSounds.length];
+        for (int[] drumPattern : drumPatterns) {
+            for (int i = 0; i < bestDrumPatternLength; i++) {
+                for (int j = 0; j < drumSounds.length; j++) {
+                    if (drumPattern[i] == drumSounds[j]) {
+                        bestDrumSounds[i][j]++;
+                    }
+                }
+            }
+        }
+        int[] bestDrumPattern = new int[bestDrumPatternLength];
+        for (int i = 0; i < bestDrumPatternLength; i++) {
+            int biggest = 0;
+            for (int j = 0; j < bestDrumSounds.length; j++) {
+                if (bestDrumSounds[i][j] > bestDrumSounds[i][biggest]) {
+                    biggest = j;
+                }
+            }
+            bestDrumPattern[i] = drumSounds[biggest];
+        }
+        return bestDrumPattern;
+    }
+
+    int bestDrumSpeed = 0;
+    public void getBestDrumSpeed() {
+        int[] bestDrumSpeeds = new int[drumSpeeds.length];
+        for (int i = 0; i < top; i++) {
+            Song song = songs.get(i);
+            for (int j = 0; j < song.getNumberOfProgressions(); j++) {
+                for (int k = 0; k < drumSpeeds.length; k++) {
+                    if (song.getProgressions().get(j).getDrumSpeed() == drumSpeeds[k])
+                        bestDrumSpeeds[k]++;
+                }
+            }
+        }
+        int biggest = 0;
+        for (int i = 0; i < bestDrumSpeeds.length; i++) {
+            if (bestDrumSpeeds[i] > bestDrumSpeeds[biggest]) {
+                biggest = i;
+            }
+        }
+        bestDrumSpeed = drumSpeeds[biggest];
+    }
+
+    int bestDrumPatternLength = 0;
+    public void getBestDrumPatternLength() {
+        int[] bestDrumPatternLengths = new int[drumPatternLengths.length];
+        for (int i = 0; i < top; i++) {
+            Song song = songs.get(i);
+            for (int j = 0; j < song.getNumberOfProgressions(); j++) {
+                for (int k = 0; k < drumPatternLengths.length; k++) {
+                    if (song.getProgressions().get(j).getDrumSpeed() == drumPatternLengths[k])
+                        bestDrumPatternLengths[k]++;
+                }
+            }
+        }
+        int biggest = 0;
+        for (int i = 0; i < bestDrumPatternLengths.length; i++) {
+            if (bestDrumPatternLengths[i] > bestDrumPatternLengths[biggest]) {
+                biggest = i;
+            }
+        }
+        bestDrumPatternLength = drumPatternLengths[biggest];
     }
 
     public void getScale() {
@@ -458,14 +589,13 @@ public class AI  {
                 }
             }
         }
-    int biggest = 0;
-    for (int i = 0; i < bestBassSpeeds.length; i++) {
-        if (bestBassSpeeds[i] > bestBassSpeeds[biggest]) {
-            biggest = i;
+        int biggest = 0;
+        for (int i = 0; i < bestBassSpeeds.length; i++) {
+            if (bestBassSpeeds[i] > bestBassSpeeds[biggest]) {
+                biggest = i;
+            }
         }
-    }
-    bestBassSpeed = bassSpeeds[biggest];
-
+        bestBassSpeed = bassSpeeds[biggest];
     }
 
     public void shouldHaveDrums() {
@@ -492,14 +622,19 @@ public class AI  {
                 }
             }
         }
-        progShouldHaveDrums = d / numberOfProgs > 0.5;
+        if (numberOfProgs == 0) {
+            progShouldHaveDrums = false;
+        }
+        else {
+            progShouldHaveDrums = d / numberOfProgs > 0.5;
+        }
     }
 
     public void progShouldHaveBass() {
         int d = 0;
         int numberOfProgs = 0;
         for (int i = 0; i < top; i++) {
-            if (songs.get(i).getHasDrums()) {
+            if (songs.get(i).getHasBass()) {
                 Song song = songs.get(i);
                 for (int j = 0; j < song.getProgressions().size(); j++) {
                     if (song.getProgressions().get(j).getHasBass()) {
@@ -509,15 +644,29 @@ public class AI  {
                 }
             }
         }
-        progShouldHaveBass = d / numberOfProgs > 0.5;
+        if (numberOfProgs == 0) {
+            progShouldHaveBass = false;
+        }
+        else {
+            progShouldHaveBass = d / numberOfProgs > 0.5;
+        }
     }
 
+
     public void bestKey() {
+        int bestKeys[] = new int[12];
         int k = 0;
-        for (int i = 0; i < top; i++) {
-            k += songs.get(i).getKey();
+        for (int i = 0; i < songs.size()/2; i++) {
+            bestKeys[k]++;
         }
-        bestKey = k / top;
+        int biggest = 0;
+        for (int i = 0; i < bestKeys.length; i++) {
+            if (bestKeys[i] > biggest) {
+                biggest = i;
+            }
+        }
+        bestKey = biggest;
+
     }
 
     public void bestTempo() {
@@ -552,46 +701,67 @@ public class AI  {
         }
     }
 
+    int[] bestChordInstruments = new int[chordInstruments.length];
     public void bestChordInstrument() {
         int cI;
-        int[] instruments = new int[0];
-        for (int i = 0; i < top; i++) {
+        for (int i = 0; i < songs.size()/2; i++) {
             Song song = songs.get(i);
-            instruments = song.getChordInstruments();
             cI = song.getChordInstrument();
-            for (int j = 0; j < instruments.length; j++) {
-                if (cI == song.getChordInstruments()[j]) {
-                    bestChordInstrument += j;
+            for (int j = 0; j < chordInstruments.length; j++) {
+                if (cI == chordInstruments[j]) {
+                    bestChordInstruments[j] ++;
                 }
             }
         }
-        bestChordInstrument /= top;
-        bestChordInstrument = instruments[bestChordInstrument];
+        int biggest = 0;
+        for (int i = 0; i < bestChordInstruments.length; i++) {
+            if (bestChordInstruments[i] > bestChordInstruments[biggest]) {
+                biggest = i;
+            }
+        }
+        bestChordInstrument = chordInstruments[biggest];
     }
 
+    int[] bestMelodyInstruments = new int[melodyInstruments.length];
     public void bestMelodyInstrument() {
         int mI;
-        int[] instruments = new int[0];
-        for (int i = 0; i < top; i++) {
+        for (int i = 0; i < songs.size()/2; i++) {
             Song song = songs.get(i);
-            instruments = song.getMelodyInstruments();
             mI = song.getMelodyInstrument();
-            for (int j = 0; j < instruments.length; j++) {
-                if (mI == instruments[j]) {
-                    bestMelodyInstrument += j;
+            for (int j = 0; j < melodyInstruments.length; j++) {
+                if (mI == melodyInstruments[j]) {
+                    bestMelodyInstruments[j] ++;
                 }
             }
         }
-        bestMelodyInstrument /= top;
-        bestMelodyInstrument = instruments[bestMelodyInstrument];
+        int biggest = 0;
+        for (int i = 0; i < bestMelodyInstruments.length; i++) {
+            if (bestMelodyInstruments[i] > bestMelodyInstruments[biggest]) {
+                biggest = i;
+            }
+        }
+        bestMelodyInstrument = melodyInstruments[biggest];
     }
 
+    int[] bestBassInstruments = new int[bassInstruments.length];
     public void bestBassInstrument() {
-        for (int i = 0; i < top; i++) {
+        int mI;
+        for (int i = 0; i < songs.size()/2; i++) {
             Song song = songs.get(i);
-            bestBassInstrument += song.getBassInstrument();
+            mI = song.getBassInstrument();
+            for (int j = 0; j < bassInstruments.length; j++) {
+                if (mI == bassInstruments[j]) {
+                    bestBassInstruments[j] ++;
+                }
+            }
         }
-        bestBassInstrument /= top;
+        int biggest = 0;
+        for (int i = 0; i < bestBassInstruments.length; i++) {
+            if (bestBassInstruments[i] > bestBassInstruments[biggest]) {
+                biggest = i;
+            }
+        }
+        bestBassInstrument = bassInstruments[biggest];
     }
 
     int bestTimesChordPlayed;

@@ -128,7 +128,7 @@ public class Song {
             }
             //Bass
             if (i == 2) {
-                int r = rand.nextInt(9);
+                int r = rand.nextInt(8);
                 tracks[i].setInstrument(32 + r);
             }
             else {
